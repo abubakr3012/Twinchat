@@ -22,7 +22,7 @@ class Chat(models.Model):
     )
 
     avatar = models.ImageField(
-        upload_to='chat_avatars/',
+        upload_to='media/chat_avatars/',
         null=True,
         blank=True
     )
