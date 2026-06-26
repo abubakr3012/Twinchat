@@ -16,5 +16,4 @@ urlpatterns = [
         '<int:pk>/',
         ChatDetailView.as_view()
     ),
-
 ]
