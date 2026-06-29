@@ -1,0 +1,57 @@
+name: twinchat
+description: TwinChat — мессенджер на Flutter (Flutter SDK).
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State management
+  flutter_bloc: ^8.1.6
+
+  # Navigation
+  go_router: ^14.0.0
+
+  # Network
+  dio: ^5.4.3
+  web_socket_channel: ^3.0.0
+
+  # Dependency injection
+  get_it: ^8.0.2
+  injectable: ^2.4.1
+
+  # Storage
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.0
+
+  # Images
+  cached_network_image: ^3.3.1
+  image_picker: ^1.1.2
+
+  # Models
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+
+  # Misc
+  intl: ^0.20.0
+  equatable: ^2.0.5
+  dartz: ^0.10.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.9
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+  injectable_generator: ^2.4.1
+
+flutter:
+  uses-material-design: true
