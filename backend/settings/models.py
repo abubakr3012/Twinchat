@@ -10,12 +10,6 @@ class ChatSettings(models.Model):
         ('system', 'System'),
     )
 
-    TEXT_SIZE_CHOICES = (
-        ('small', 'Small'),
-        ('medium', 'Medium'),
-        ('large', 'Large'),
-    )
-
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -28,10 +22,9 @@ class ChatSettings(models.Model):
         default='system'
     )
 
-    text_size = models.CharField(
-        max_length=20,
-        choices=TEXT_SIZE_CHOICES,
-        default='medium'
+    text_size = models.PositiveSmallIntegerField(
+        default=14,
+        help_text='Font size in pixels (12-22)'
     )
 
     notifications = models.BooleanField(

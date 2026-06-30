@@ -1,10 +1,11 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import '../entities/attachment.dart';
 
 abstract class AttachmentsRepository {
   Future<Attachment> upload({
-    required File file,
+    required Uint8List bytes,
+    required String fileName,
     int? messageId,
   });
   Future<List<Attachment>> listForMessage(int messageId);

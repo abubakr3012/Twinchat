@@ -24,6 +24,8 @@ class Attachment extends Equatable {
   final int? durationSeconds;
   final String? thumbnailUrl;
 
+  String get fileUrl => url;
+
   @override
   List<Object?> get props => [
         id,

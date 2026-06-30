@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import '../../domain/entities/attachment.dart';
 import '../../domain/repositories/attachments_repository.dart';
@@ -10,8 +10,12 @@ class AttachmentsRepositoryImpl implements AttachmentsRepository {
   final AttachmentsRemote _remote;
 
   @override
-  Future<Attachment> upload({required File file, int? messageId}) async {
-    final dto = await _remote.upload(file: file, messageId: messageId);
+  Future<Attachment> upload({
+    required Uint8List bytes,
+    required String fileName,
+    int? messageId,
+  }) async {
+    final dto = await _remote.upload(bytes: bytes, fileName: fileName, messageId: messageId);
     return dto.toDomain();
   }
 

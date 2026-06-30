@@ -1,11 +1,15 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/storage/token_storage.dart';
 import '../../../domain/entities/message.dart';
+import '../../../domain/repositories/attachments_repository.dart';
 import '../../../domain/repositories/messages_repository.dart';
 import '../../../domain/repositories/reactions_repository.dart';
 import '../../../domain/repositories/users_repository.dart';
@@ -41,7 +45,9 @@ class _ChatView extends StatefulWidget {
 class _ChatViewState extends State<_ChatView> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
+  final _picker = ImagePicker();
   bool _typing = false;
+  bool _isUploading = false;
 
   @override
   void dispose() {
@@ -66,6 +72,63 @@ class _ChatViewState extends State<_ChatView> {
 
   void _onTextChanged(String v) {
     _setTyping(v.isNotEmpty);
+  }
+
+  Future<void> _pickAndSendImage() async {
+    try {
+      final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
+      if (file == null) return;
+      await _sendXFile(file, MessageType.image);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка выбора изображения: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickAndSendVideo() async {
+    try {
+      final XFile? file = await _picker.pickVideo(source: ImageSource.gallery);
+      if (file == null) return;
+      await _sendXFile(file, MessageType.video);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка выбора видео: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendXFile(XFile xfile, MessageType type) async {
+    if (_isUploading) return;
+    setState(() => _isUploading = true);
+    try {
+      final bytes = await xfile.readAsBytes();
+      final attachmentsRepo = GetIt.I<AttachmentsRepository>();
+      final attachment = await attachmentsRepo.upload(
+        bytes: bytes,
+        fileName: xfile.name,
+      );
+
+      if (!mounted) return;
+      context.read<ChatBloc>().add(ChatSend(
+        attachment.url,
+        messageType: type,
+      ));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка загрузки файла: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
   }
 
   void _showMessageMenu(BuildContext context, Message m) {
@@ -236,6 +299,9 @@ class _ChatViewState extends State<_ChatView> {
                   controller: _controller,
                   onSend: _send,
                   onChanged: _onTextChanged,
+                  onPickImage: _pickAndSendImage,
+                  onPickVideo: _pickAndSendVideo,
+                  isUploading: _isUploading,
                 ),
               ],
             );
@@ -294,15 +360,49 @@ class _MessageBubble extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      message.isDeleted ? 'Удалено' : message.content,
-                      style: TextStyle(
-                        color: onColor,
-                        fontStyle: message.isDeleted
-                            ? FontStyle.italic
-                            : FontStyle.normal,
+                    if (message.messageType == MessageType.image && message.content.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: message.content,
+                          width: 200,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const SizedBox(
+                            width: 200,
+                            height: 150,
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                          errorWidget: (context, url, error) => const SizedBox(
+                            width: 200,
+                            height: 150,
+                            child: Center(child: Icon(Icons.broken_image)),
+                          ),
+                        ),
                       ),
-                    ),
+                    if (message.messageType == MessageType.video && message.content.isNotEmpty)
+                      Container(
+                        width: 200,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.play_circle_outline, 
+                            size: 50, 
+                            color: Colors.white),
+                        ),
+                      ),
+                    if (message.messageType == MessageType.text || message.content.isEmpty)
+                      Text(
+                        message.isDeleted ? 'Удалено' : message.content,
+                        style: TextStyle(
+                          color: onColor,
+                          fontStyle: message.isDeleted
+                              ? FontStyle.italic
+                              : FontStyle.normal,
+                        ),
+                      ),
                     const SizedBox(height: 2),
                     Row(
                       mainAxisSize: MainAxisSize.min,
@@ -338,11 +438,17 @@ class _Composer extends StatelessWidget {
     required this.controller,
     required this.onSend,
     required this.onChanged,
+    required this.onPickImage,
+    required this.onPickVideo,
+    required this.isUploading,
   });
 
   final TextEditingController controller;
   final VoidCallback onSend;
   final ValueChanged<String> onChanged;
+  final VoidCallback onPickImage;
+  final VoidCallback onPickVideo;
+  final bool isUploading;
 
   @override
   Widget build(BuildContext context) {
@@ -353,12 +459,43 @@ class _Composer extends StatelessWidget {
         children: [
           IconButton(
             tooltip: 'Прикрепить файл',
-            icon: const Icon(Icons.attach_file),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Прикрепление файлов — скоро')),
-              );
-            },
+            icon: isUploading 
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.attach_file),
+            onPressed: isUploading 
+                ? null 
+                : () {
+                    showModalBottomSheet<void>(
+                      context: context,
+                      builder: (_) => SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.photo_library),
+                              title: const Text('Фото'),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                onPickImage();
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.video_library),
+                              title: const Text('Видео'),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                onPickVideo();
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
           ),
           Expanded(
             child: TextField(

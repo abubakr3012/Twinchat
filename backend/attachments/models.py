@@ -13,11 +13,13 @@ class Attachment(models.Model):
     message = models.ForeignKey(
         'chat_messages.Message',
         on_delete=models.CASCADE,
-        related_name='attachments'
+        related_name='attachments',
+        null=True,
+        blank=True
     )
 
     file = models.FileField(
-        upload_to='media/attachments/'
+        upload_to='attachments/'
     )
 
     file_type = models.CharField(
@@ -55,7 +57,7 @@ class Attachment(models.Model):
     )
 
     thumbnail = models.ImageField(
-        upload_to='media/thumbnails/',
+        upload_to='thumbnails/',
         null=True,
         blank=True
     )

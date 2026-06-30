@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
@@ -9,11 +9,12 @@ class AttachmentsRemote {
   final Dio _dio;
 
   Future<AttachmentDto> upload({
-    required File file,
+    required Uint8List bytes,
+    required String fileName,
     int? messageId,
   }) async {
     final form = FormData.fromMap({
-      'file': await MultipartFile.fromFile(file.path),
+      'file': MultipartFile.fromBytes(bytes, filename: fileName),
       if (messageId != null) 'message': messageId.toString(),
     });
     final res = await _dio.post<Map<String, dynamic>>(
