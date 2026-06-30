@@ -28,6 +28,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
         read_only_fields = [
+            'chat',
             'sender',
             'created_at',
             'updated_at'

@@ -106,17 +106,29 @@ class _ChatViewState extends State<_ChatView> {
     if (_isUploading) return;
     setState(() => _isUploading = true);
     try {
-      final bytes = await xfile.readAsBytes();
+      final messagesRepo = GetIt.I<MessagesRepository>();
       final attachmentsRepo = GetIt.I<AttachmentsRepository>();
+      
+      // First create a message with placeholder content
+      final message = await messagesRepo.send(
+        chatId: widget.chatId,
+        content: 'Uploading...',
+        messageType: type,
+      );
+
+      // Then upload the attachment with the message_id
+      final bytes = await xfile.readAsBytes();
       final attachment = await attachmentsRepo.upload(
         bytes: bytes,
         fileName: xfile.name,
+        messageId: message.id,
       );
 
       if (!mounted) return;
-      context.read<ChatBloc>().add(ChatSend(
-        attachment.url,
-        messageType: type,
+      // Update the message content with the attachment URL
+      context.read<ChatBloc>().add(ChatEdit(
+        messageId: message.id,
+        content: attachment.url,
       ));
     } catch (e) {
       if (mounted) {
@@ -433,7 +445,7 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
-class _Composer extends StatelessWidget {
+class _Composer extends StatefulWidget {
   const _Composer({
     required this.controller,
     required this.onSend,
@@ -451,6 +463,27 @@ class _Composer extends StatelessWidget {
   final bool isUploading;
 
   @override
+  State<_Composer> createState() => _ComposerState();
+}
+
+class _ComposerState extends State<_Composer> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onControllerChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onControllerChanged);
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(8),
@@ -459,14 +492,14 @@ class _Composer extends StatelessWidget {
         children: [
           IconButton(
             tooltip: 'Прикрепить файл',
-            icon: isUploading 
+            icon: widget.isUploading 
                 ? const SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.attach_file),
-            onPressed: isUploading 
+            onPressed: widget.isUploading 
                 ? null 
                 : () {
                     showModalBottomSheet<void>(
@@ -480,7 +513,7 @@ class _Composer extends StatelessWidget {
                               title: const Text('Фото'),
                               onTap: () {
                                 Navigator.of(context).pop();
-                                onPickImage();
+                                widget.onPickImage();
                               },
                             ),
                             ListTile(
@@ -488,7 +521,7 @@ class _Composer extends StatelessWidget {
                               title: const Text('Видео'),
                               onTap: () {
                                 Navigator.of(context).pop();
-                                onPickVideo();
+                                widget.onPickVideo();
                               },
                             ),
                           ],
@@ -499,10 +532,12 @@ class _Composer extends StatelessWidget {
           ),
           Expanded(
             child: TextField(
-              controller: controller,
-              onChanged: onChanged,
+              controller: widget.controller,
+              onChanged: widget.onChanged,
+              onSubmitted: (_) => widget.onSend(),
               minLines: 1,
               maxLines: 4,
+              textInputAction: TextInputAction.send,
               decoration: const InputDecoration(
                 hintText: 'Сообщение',
                 border: OutlineInputBorder(),
@@ -511,7 +546,7 @@ class _Composer extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.send),
-            onPressed: onSend,
+            onPressed: widget.onSend,
           ),
         ],
       ),

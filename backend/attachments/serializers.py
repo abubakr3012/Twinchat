@@ -46,7 +46,7 @@ class AttachmentUploadSerializer(serializers.ModelSerializer):
             'file_name',
             'file_size',
         ]
-        read_only_fields = ['id', 'file_name', 'file_size', 'file_type']
+        read_only_fields = ['id', 'file_type']
 
     def get_file_url(self, obj):
         if obj.file:

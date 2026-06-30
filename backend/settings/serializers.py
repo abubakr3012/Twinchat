@@ -8,11 +8,12 @@ class ChatSettingsSerializer(serializers.ModelSerializer):
         model = ChatSettings
         fields = [
             'id',
+            'user',
             'theme',
             'text_size',
             'notifications',
         ]
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'user']
 
 
 class PrivacySerializer(serializers.ModelSerializer):
@@ -21,6 +22,7 @@ class PrivacySerializer(serializers.ModelSerializer):
         model = Privacy
         fields = [
             'id',
+            'user',
             'see_phone_number',
             'see_profile_photo',
             'see_last_seen',
@@ -28,7 +30,7 @@ class PrivacySerializer(serializers.ModelSerializer):
             'message_ttl_days',
             'two_factor_auth',
         ]
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'user']
 
 
 class AppLanguageSerializer(serializers.ModelSerializer):
@@ -37,7 +39,8 @@ class AppLanguageSerializer(serializers.ModelSerializer):
         model = AppLanguage
         fields = [
             'id',
+            'user',
             'language',
             'auto_translate',
         ]
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'user']

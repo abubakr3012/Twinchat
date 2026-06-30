@@ -226,28 +226,31 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   }
 
   Future<void> _onSend(ChatSend event, Emitter<ChatState> emit) async {
-    final socket = _socket;
-    if (socket != null) {
-      // Предпочтительно — WebSocket: моментальная доставка другим клиентам.
-      socket.sendMessage(
+    // Always use HTTP for reliable message sending
+    try {
+      final msg = await _messagesRepo.send(
+        chatId: _chatId,
         content: event.content,
-        messageType: _messageTypeToString(event.messageType),
+        messageType: event.messageType,
       );
-      // Локально ничего не добавляем — сервер пришлёт сообщение обратно через WS.
-    } else {
-      // Fallback: HTTP POST.
-      try {
-        final msg = await _messagesRepo.send(
-          chatId: _chatId,
-          content: event.content,
-          messageType: event.messageType,
-        );
-        add(_ChatAppendMessage(msg));
-      } on Object catch (e) {
-        if (state is ChatReady) {
-          emit((state as ChatReady)
-              .copyWith(error: extractErrorMessage(e)));
+      add(_ChatAppendMessage(msg));
+      
+      // Also try to send via WebSocket for real-time sync to other users
+      final socket = _socket;
+      if (socket != null) {
+        try {
+          socket.sendMessage(
+            content: event.content,
+            messageType: _messageTypeToString(event.messageType),
+          );
+        } catch (_) {
+          // Ignore WebSocket errors, message already sent via HTTP
         }
+      }
+    } on Object catch (e) {
+      if (state is ChatReady) {
+        emit((state as ChatReady)
+            .copyWith(error: extractErrorMessage(e)));
       }
     }
   }

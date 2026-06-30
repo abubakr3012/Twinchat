@@ -21,7 +21,6 @@ class MessagesRemote {
     final res = await _dio.post<Map<String, dynamic>>(
       'messages/chat/$chatId/',
       data: {
-        'chat': chatId,
         'content': content,
         'message_type': messageType,
       },

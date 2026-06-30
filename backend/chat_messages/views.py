@@ -33,7 +33,8 @@ class MessageListCreateView(
     ):
 
         serializer.save(
-            sender=self.request.user
+            sender=self.request.user,
+            chat_id=self.kwargs['chat_id']
         )
 
 
