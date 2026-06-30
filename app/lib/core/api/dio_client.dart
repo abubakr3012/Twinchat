@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../storage/token_storage.dart';
 import 'api_constants.dart';
+import 'refresh_interceptor.dart';
 
 /// Интерцептор, который автоматически добавляет `Authorization: Bearer <jwt>`
-/// ко всем исходящим запросам.
+/// ко всем исходящим запросам (читает access из [FlutterSecureStorage]).
 class AuthInterceptor extends Interceptor {
   AuthInterceptor(this._storage);
 
@@ -26,11 +28,19 @@ class AuthInterceptor extends Interceptor {
 
 /// Фабрика Dio-клиента с интерцепторами и базовыми таймаутами.
 class DioClient {
-  DioClient._(this.dio);
+  DioClient._({required this.dio, required this.refreshDio});
 
+  /// Создать клиента.
+  ///
+  /// [tokenStorage] — для доступа к токенам.
+  /// [onError] — клиентский логгер (ошибки 4xx/5xx, таймауты).
+  /// [onAuthFailure] — вызывается, когда refresh окончательно провалился
+  /// (токен отозван, истёк, refresh-токен тоже невалиден).
   static DioClient create({
     required FlutterSecureStorage storage,
+    required TokenStorage tokenStorage,
     required void Function(String message) onError,
+    required Future<void> Function() onAuthFailure,
   }) {
     final dio = Dio(
       BaseOptions(
@@ -43,7 +53,26 @@ class DioClient {
       ),
     );
 
+    // Отдельный Dio-инстанс для refresh, чтобы не зациклиться.
+    final refreshDio = Dio(
+      BaseOptions(
+        baseUrl: ApiConstants.baseUrl,
+        connectTimeout: ApiConstants.connectTimeout,
+        receiveTimeout: ApiConstants.receiveTimeout,
+        sendTimeout: ApiConstants.sendTimeout,
+        headers: const {'Content-Type': 'application/json'},
+        responseType: ResponseType.json,
+      ),
+    );
+
     dio.interceptors.add(AuthInterceptor(storage));
+    dio.interceptors.add(
+      RefreshTokenInterceptor(
+        tokenStorage: tokenStorage,
+        refreshDio: refreshDio,
+        onAuthFailure: onAuthFailure,
+      ),
+    );
     dio.interceptors.add(
       LogInterceptor(
         requestBody: false,
@@ -61,10 +90,13 @@ class DioClient {
       ),
     );
 
-    return DioClient._(dio);
+    return DioClient._(dio: dio, refreshDio: refreshDio);
   }
 
   final Dio dio;
+
+  /// Dio для refresh — без auth/refresh интерцепторов.
+  final Dio refreshDio;
 
   static String _describe(DioException e) {
     switch (e.type) {

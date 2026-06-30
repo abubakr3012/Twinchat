@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/api/api_constants.dart';
 import '../core/api/dio_client.dart';
+import '../core/crypto/key_manager.dart';
 import '../core/storage/token_storage.dart';
 import '../data/datasources/attachments_remote.dart';
 import '../data/datasources/auth_remote.dart';
@@ -50,16 +51,30 @@ Future<void> configureDependencies() async {
   );
   getIt.registerSingleton<FlutterSecureStorage>(secure);
   getIt.registerSingleton<TokenStorage>(TokenStorage(secure));
+  getIt.registerSingleton<KeyManager>(KeyManager(secure));
 
   final prefs = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(prefs);
 
   // --- Сеть ---
+  final tokenStorage = getIt<TokenStorage>();
   final dioClient = DioClient.create(
     storage: secure,
+    tokenStorage: tokenStorage,
     onError: (msg) {
       // ignore: avoid_print
       print('[dio] $msg');
+    },
+    onAuthFailure: () async {
+      // Refresh окончательно провалился — чистим токены и уводим на экран входа.
+      await tokenStorage.clear();
+      // Late-безопасное перенаправление: роутер может быть ещё не инициализирован.
+      try {
+        final router = getIt<AppRouter>();
+        router.config.go('/phone');
+      } catch (_) {
+        // ignore — роутер ещё не зарегистрирован
+      }
     },
   );
   getIt.registerSingleton<DioClient>(dioClient);
@@ -126,6 +141,5 @@ Future<void> configureDependencies() async {
   );
 
   // --- Роутер ---
-  final tokenStorage = getIt<TokenStorage>();
   registerAppRouter(getIt, tokenStorage.hasAccess);
 }

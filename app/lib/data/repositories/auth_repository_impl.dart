@@ -80,6 +80,13 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<String> refresh() async {
+    final dto = await _remote.refreshToken(await _storage.readRefresh() ?? '');
+    await _storage.saveTokens(access: dto.access, refresh: dto.refresh);
+    return dto.access;
+  }
+
+  @override
   Future<void> logout() => _storage.clear();
 
   @override

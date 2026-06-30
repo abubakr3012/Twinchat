@@ -44,6 +44,9 @@ dependencies:
   equatable: ^2.0.5
   dartz: ^0.10.1
 
+  # Crypto: Curve25519 (X25519) + AES-256-GCM
+  cryptography: ^2.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -52,6 +55,7 @@ dev_dependencies:
   freezed: ^2.5.2
   json_serializable: ^6.8.0
   injectable_generator: ^2.4.1
+  mocktail: ^1.0.4
 
 flutter:
   uses-material-design: true

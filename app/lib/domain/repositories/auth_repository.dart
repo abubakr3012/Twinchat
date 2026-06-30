@@ -27,6 +27,10 @@ abstract class AuthRepository {
     required String password,
   });
 
+  /// Обновление access-токена по refresh-токену.
+  /// Возвращает новый access. Если refresh тоже невалиден — бросает исключение.
+  Future<String> refresh();
+
   /// Выход: очищает локальные токены.
   Future<void> logout();
 
