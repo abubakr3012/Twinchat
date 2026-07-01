@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+import '../../../domain/entities/chat.dart';
+import '../../../domain/repositories/chats_repository.dart';
 import '../../../domain/repositories/users_repository.dart';
 import '../../blocs/profile/other_profile_bloc.dart';
 
@@ -25,14 +28,71 @@ class _ProfileView extends StatelessWidget {
   const _ProfileView({required this.userId});
   final int userId;
 
+  Future<void> _openChat(BuildContext context) async {
+    final chatsRepo = GetIt.I<ChatsRepository>();
+    final l10n = AppLocalizations.of(context);
+
+    // Show a loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final chats = await chatsRepo.list();
+
+      // Look for an existing private chat with this user
+      Chat? existingChat;
+      for (final chat in chats) {
+        if (chat.type == ChatType.private) {
+          final isWithUser = chat.members.any((m) => m.userId == userId);
+          if (isWithUser) {
+            existingChat = chat;
+            break;
+          }
+        }
+      }
+
+      // Close the loading dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (existingChat != null) {
+        if (context.mounted) {
+          context.go('/chat/${existingChat.id}');
+        }
+      } else {
+        // Create new private chat
+        final newChat = await chatsRepo.create(type: ChatType.private);
+        // Add member
+        await chatsRepo.addMember(chatId: newChat.id, userId: userId);
+
+        if (context.mounted) {
+          context.go('/chat/${newChat.id}');
+        }
+      }
+    } catch (e) {
+      // Close the loading dialog if it's still open
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${l10n.errorOpeningChat}: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Профиль'),
+        title: Text(l10n.profile),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/contacts'),
+          onPressed: () => context.pop(),
         ),
       ),
       body: BlocConsumer<OtherProfileBloc, OtherProfileState>(
@@ -74,41 +134,33 @@ class _ProfileView extends StatelessWidget {
               const SizedBox(height: 24),
               ListTile(
                 leading: const Icon(Icons.info_outline),
-                title: const Text('О себе'),
+                title: Text(l10n.profile),
                 subtitle: Text(user.bio ?? '—'),
               ),
               ListTile(
                 leading: const Icon(Icons.alternate_email),
-                title: const Text('Email'),
+                title: Text(l10n.email),
                 subtitle: Text(user.email ?? '—'),
               ),
               ListTile(
                 leading: const Icon(Icons.phone),
-                title: const Text('Телефон'),
+                title: Text(l10n.phone),
                 subtitle: Text(user.phoneNumber ?? '—'),
               ),
               const SizedBox(height: 12),
               FilledButton.icon(
                 icon: const Icon(Icons.chat_bubble_outline),
-                label: const Text('Написать'),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Прямой чат появится в следующей версии',
-                      ),
-                    ),
-                  );
-                },
+                label: Text(l10n.openChat),
+                onPressed: () => _openChat(context),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 icon: const Icon(Icons.call),
-                label: const Text('Позвонить'),
+                label: Text(l10n.call),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Выберите чат для звонка'),
+                    SnackBar(
+                      content: Text(l10n.selectChatForCall),
                     ),
                   );
                 },

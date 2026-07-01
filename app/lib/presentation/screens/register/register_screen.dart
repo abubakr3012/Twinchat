@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
@@ -65,6 +65,7 @@ class _RegisterViewState extends State<_RegisterView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       body: SafeArea(
@@ -133,14 +134,14 @@ class _RegisterViewState extends State<_RegisterView> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'Создать аккаунт',
+                          l10n.createAccount,
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Заполните данные для регистрации в TwinChat',
+                          l10n.registrationHint,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: scheme.onSurfaceVariant,
                           ),
@@ -161,13 +162,13 @@ class _RegisterViewState extends State<_RegisterView> {
                           // Username
                           _buildTextField(
                             controller: _username,
-                            label: 'Имя пользователя',
+                            label: l10n.username,
                             hint: 'twinchat_user',
                             prefixIcon: Icons.person_outline_rounded,
                             textInputAction: TextInputAction.next,
                             validator: (v) {
                               if (v == null || v.trim().length < 3) {
-                                return 'Не менее 3 символов';
+                                return l10n.min3Chars;
                               }
                               return null;
                             },
@@ -178,16 +179,16 @@ class _RegisterViewState extends State<_RegisterView> {
                           // Email
                           _buildTextField(
                             controller: _email,
-                            label: 'Email',
+                            label: l10n.email,
                             hint: 'example@email.com',
                             prefixIcon: Icons.email_outlined,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
                             validator: (v) {
                               if (v == null || v.trim().isEmpty) {
-                                return 'Введите email';
+                                return l10n.enterEmail;
                               }
-                              if (!v.contains('@')) return 'Некорректный email';
+                              if (!v.contains('@')) return l10n.invalidEmail;
                               return null;
                             },
                             enabled: !loading,
@@ -197,8 +198,8 @@ class _RegisterViewState extends State<_RegisterView> {
                           // Phone
                           _buildTextField(
                             controller: _phone,
-                            label: 'Телефон',
-                            hint: '+998 90 123 45 67',
+                            label: l10n.phone,
+                            hint: l10n.phoneHint,
                             prefixIcon: Icons.phone_outlined,
                             keyboardType: TextInputType.phone,
                             textInputAction: TextInputAction.next,
@@ -211,7 +212,7 @@ class _RegisterViewState extends State<_RegisterView> {
                               final digits =
                                   (v ?? '').replaceAll(RegExp(r'[^0-9]'), '');
                               if (digits.length < 7) {
-                                return 'Введите корректный номер';
+                                return l10n.invalidNumber;
                               }
                               return null;
                             },
@@ -222,8 +223,8 @@ class _RegisterViewState extends State<_RegisterView> {
                           // Password
                           _buildTextField(
                             controller: _password,
-                            label: 'Пароль',
-                            hint: 'Минимум 6 символов',
+                            label: l10n.password,
+                            hint: l10n.min6Chars,
                             prefixIcon: Icons.lock_outline_rounded,
                             obscureText: _obscurePassword,
                             textInputAction: TextInputAction.next,
@@ -239,7 +240,7 @@ class _RegisterViewState extends State<_RegisterView> {
                             ),
                             validator: (v) {
                               if (v == null || v.length < 6) {
-                                return 'Не менее 6 символов';
+                                return l10n.min6Chars;
                               }
                               return null;
                             },
@@ -250,8 +251,8 @@ class _RegisterViewState extends State<_RegisterView> {
                           // Confirm password
                           _buildTextField(
                             controller: _password2,
-                            label: 'Повторите пароль',
-                            hint: 'Повторите пароль',
+                            label: l10n.repeatPassword,
+                            hint: l10n.repeatPassword,
                             prefixIcon: Icons.lock_outline_rounded,
                             obscureText: _obscurePassword2,
                             textInputAction: TextInputAction.done,
@@ -266,7 +267,7 @@ class _RegisterViewState extends State<_RegisterView> {
                                   () => _obscurePassword2 = !_obscurePassword2),
                             ),
                             validator: (v) =>
-                                v == _password.text ? null : 'Пароли не совпадают',
+                                v == _password.text ? null : l10n.passwordsNoMatch,
                             onFieldSubmitted: (_) => _submit(context),
                             enabled: !loading,
                           ),
@@ -298,8 +299,8 @@ class _RegisterViewState extends State<_RegisterView> {
                                     ),
                                   )
                                 : Text(
-                                    'Зарегистрироваться',
-                                    style: GoogleFonts.inter(
+                                    l10n.registerButton,
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -313,7 +314,7 @@ class _RegisterViewState extends State<_RegisterView> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Уже есть аккаунт? ',
+                              '${l10n.hasAccount} ',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: scheme.onSurfaceVariant,
                               ),
@@ -328,8 +329,8 @@ class _RegisterViewState extends State<_RegisterView> {
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: Text(
-                                'Войти',
-                                style: GoogleFonts.inter(
+                                l10n.login,
+                                style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),

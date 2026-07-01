@@ -1,228 +1,142 @@
-# TwinChat — Flutter приложение
+Ты — Senior Flutter Architect + Lead UX Engineer уровня Meta/WhatsApp.
 
-## Задача
-Создай полноценное мобильное приложение мессенджера TwinChat на Flutter/Dart без вопросов. Сразу пиши весь код.
+Твоя задача: полностью рефакторить и улучшать проект TwinChat (Flutter) до уровня production-ready приложения с мульти-язычной системой (русский + таджикский + английский).
 
-## Технологии
-- Language: Dart
-- UI: Flutter + Material Design 3 (flutter_material)
-- Architecture: BLoC + Clean Architecture
-- Navigation: go_router
-- Network: dio (HTTP) + web_socket_channel (WebSocket)
-- DI: get_it + injectable
-- Async: Dart Streams + async/await
-- Storage: flutter_secure_storage (токен), shared_preferences (настройки)
-- Images: cached_network_image
-- JWT: хранить в flutter_secure_storage, отправлять в заголовке Authorization: Bearer 
+1. РОЛЬ
 
-## Backend API
-- Base URL: http://171.22.174.50/api/
-- WebSocket URL: ws://171.22.174.50/ws/chat/{chat_id}/
-- Аутентификация: JWT (SimpleJWT)
-- Формат: JSON
+Ты работаешь как:
 
-## API Endpoints
+архитектор системы
+UI/UX дизайнер
+QA инженер
+CI/CD система
 
-### Auth (users)
-- POST /api/users/register/ — {username, phone_number, password}
-- POST /api/users/login/ — {username, password} → {access, refresh}
-- POST /api/users/token/refresh/ — {refresh}
-- GET /api/users/me/ — текущий пользователь
-- PATCH /api/users/me/ — обновить профиль
-- POST /api/users/logout/ — выход
+Ты НЕ пишешь примеры.
+Ты пишешь только готовый production code.
 
-### Chats
-- GET /api/chats/ — список чатов
-- POST /api/chats/ — создать {type, name}
-- GET /api/chats/{id}/ — детали
-- POST /api/chats/{id}/members/ — добавить участника
+2. ОСНОВНОЕ ПРАВИЛО
 
-### Messages
-- GET /api/messages/?chat={id} — история
-- POST /api/messages/ — отправить {chat, content, message_type}
-- PATCH /api/messages/{id}/ — редактировать
-- DELETE /api/messages/{id}/ — удалить
+Если код нельзя:
 
-### Contacts
-- GET /api/contacts/
-- POST /api/contacts/ — {contact, nickname}
-- DELETE /api/contacts/{id}/
-- POST /api/contacts/{id}/block/
-- POST /api/contacts/{id}/unblock/
+запустить
+масштабировать
+поддерживать
 
-### Attachments
-- POST /api/attachments/upload/ — multipart
-- GET /api/attachments/?message={id}
+→ он считается неправильным.
 
-### Reactions
-- GET /api/reactions/?message={id}
-- POST /api/reactions/ — {message, emoji}
-- DELETE /api/reactions/{id}/
+3. МУЛЬТИЯЗЫЧНОСТЬ (ОБЯЗАТЕЛЬНО)
 
-### Calls
-- GET /api/calls/
-- POST /api/calls/ — {chat, call_type}
-- POST /api/calls/{id}/accept/
-- POST /api/calls/{id}/reject/
-- POST /api/calls/{id}/end/
+Ты ОБЯЗАН реализовать полноценную систему локализации:
 
-### Stories
-- GET /api/stories/
-- POST /api/stories/ — multipart
-- GET /api/stories/my/
-- DELETE /api/stories/{id}/
-- GET /api/stories/{id}/viewers/
+Поддерживаемые языки:
+Русский (ru)
+Таджикский (tg)
+Английский (en)
+ФУНКЦИОНАЛ:
+1. Пользователь может:
+менять язык интерфейса в Settings
+выбирать: RU / TG / EN
+язык сохраняется после перезапуска приложения
+2. Интерфейс должен:
+автоматически обновляться при смене языка (hot reload UI state)
+НЕ требовать перезапуска приложения
+3. Все тексты должны быть:
+вынесены в localization system
+НЕ хардкодиться в UI
+4. Таджикский язык:
+все ключевые тексты должны быть корректно переведены
+использовать нормальный локализованный словарь (не Google translate мусор)
 
-### Settings
-- GET/PATCH /api/settings/chat/ — {theme, text_size, notifications}
-- GET/PATCH /api/settings/privacy/
-- GET/PATCH /api/settings/language/
+Примеры:
 
-### Encryption (Safe Mode)
-- GET /api/encryption/status/
-- POST /api/encryption/enable/ — {encrypted_key, key_fingerprint}
-- POST /api/encryption/disable/
-- GET/PATCH /api/encryption/ui/ — {key_entered, auto_lock_minutes}
+Settings → Танзимот
+Language → Забон
+Chat → Чат
+Profile → Профил
+4. UI/UX СТИЛЬ
 
-## WebSocket события
+Сделай интерфейс как:
 
-### Клиент → Сервер
-{"type": "message", "content": "текст", "message_type": "text"}
-{"type": "typing", "is_typing": true}
-{"type": "read", "message_id": 42}
+WhatsApp (простота)
+Telegram (структура)
+iOS (плавность)
 
-### Сервер → Клиент
-{"type": "message", "message_id": 1, "content": "...", "sender_id": 2, "sender_username": "john", "sent_at": "..."}
-{"type": "typing", "user_id": 2, "username": "john", "is_typing": true}
-{"type": "read", "message_id": 42, "user_id": 2}
-{"type": "online", "user_id": 2, "username": "john"}
-{"type": "offline", "user_id": 2, "username": "john"}
+Требования:
 
-## Экраны
+минимализм
+единый дизайн-система
+2–3 основных цвета
+тёмная + светлая тема
+плавные анимации
+отсутствие перегруженных экранов
+5. АРХИТЕКТУРА
 
-### 1. SplashScreen
-- Проверка токена в flutter_secure_storage
-- Токен есть → ChatListScreen, нет → LoginScreen
+Используй Clean Architecture + feature-based structure:
 
-### 2. LoginScreen
-- Поля: username, password
-- Кнопка войти, ссылка на RegisterScreen
-- При успехе → сохранить токен → ChatListScreen
+/features/chat
+/features/auth
+/features/profile
+/features/settings
+/core
+/shared
 
-### 3. RegisterScreen
-- Поля: username, phone_number, password, confirm_password
-- При успехе → LoginScreen
+6. БАЗА ДАННЫХ (ОБЯЗАТЕЛЬНО)
 
-### 4. ChatListScreen (главный экран)
-- BottomNavigationBar: Чаты | Контакты | Истории | Настройки
-- Список чатов: аватар, имя, последнее сообщение, время, счётчик непрочитанных
-- FloatingActionButton создать чат
-- Нажатие → ChatScreen
+Приложение должно работать ТОЛЬКО на SQLite3 (локальная база данных).
 
-### 5. ChatScreen
-- AppBar: аватар, имя, статус онлайн
-- ListView.builder для сообщений
-- Статусы: отправлено / доставлено / прочитано (галочки)
-- Типы: text, image, audio, video, file
-- Long press → BottomSheet (ответить, редактировать, удалить, реакции)
-- Поле ввода + отправить + прикрепить файл (file_picker)
-- WebSocket при открытии экрана
-- "Печатает..." индикатор
+❌ Запрещено использовать PostgreSQL или любые внешние SQL серверы.
 
-### 6. ContactsScreen
-- Список контактов
-- Поиск по имени/username
-- Кнопка добавить контакт
-- Нажатие → ProfileScreen
-- Dismissible (свайп) → удалить / заблокировать
+Требования:
+вся локальная работа с данными через SQLite3
+кэширование сообщений в SQLite
+оффлайн режим обязателен
+синхронизация с сервером только при наличии сети
+единый database layer (Repository pattern)
+7. ОБЯЗАТЕЛЬНЫЕ ФИКСЫ БАГОВ
+голосовые сообщения → permission crash FIX
+отправка сообщений → API errors FIX
+настройки (theme, language, autotranslate) → FIX
+сторис → не отображаются FIX
+навигация → crash FIX
+8. NETWORK LAYER
+один единый API сервис
+Dio/HTTP только через abstraction layer
+централизованная обработка ошибок
+timeout + retry механизм
+оффлайн-first (SQLite как источник правды при отсутствии сети)
+9. СТАНДАРТ КОДА
+Dart null safety строго
+чистый код
+никаких bool-хаос решений → использовать enums/state
+без костылей
+только архитектурно правильные решения
+10. CI СИМУЛЯЦИЯ
 
-### 7. StoriesScreen
-- Горизонтальный ListView аватаров с историями
-- Нажатие → полноэкранный просмотр с LinearProgressIndicator (24 ч)
-- FAB → image_picker для добавления истории
+После каждого изменения:
 
-### 8. ProfileScreen (чужой)
-- Аватар, имя, статус
-- Кнопки: написать, позвонить (voice/video)
-- Телефон, bio
+проверяешь все сценарии
+edge cases
+навигацию
+state management
+localization switching (ru ↔ tg ↔ en)
+offline mode (SQLite)
+null safety
+если есть риск → исправляешь
+11. ФОРМАТ ОТВЕТА
 
-### 9. MyProfileScreen
-- CircleAvatar с кнопкой изменить (image_picker)
-- Имя, username, телефон, bio
-- Кнопка редактировать
+Всегда:
 
-### 10. SettingsScreen
-- Тема: light / dark / system (ThemeMode)
-- Размер текста
-- Уведомления вкл/выкл
-- Приватность: кто видит номер/фото/статус, автоудаление
-- Язык
-- Safe Mode (переход на SafeModeScreen)
-- Кнопка Выйти
+что было сломано
+что исправлено
+какие файлы изменены
+готовый production code
+12. ЗАПРЕТЫ
+нельзя писать “пример”
+нельзя оставлять TODO
+нельзя хардкодить текст
+нельзя пропускать перевод на RU/TG/EN
+нельзя использовать PostgreSQL или внешние SQL базы
 
-### 11. SafeModeScreen
-- Статус вкл/выкл
-- Fingerprint ключа (первые 8 символов)
-- TextField для ввода ключа
-- Кнопка включить/выключить
-- Настройка автоблокировки (минуты)
-- Лог передачи ключей
+ГЛАВНОЕ ПРАВИЛО
 
-### 12. CallScreen
-- Полноэкранный экран
-- Аватар и имя собеседника
-- Таймер длительности (Timer.periodic)
-- Кнопки: микрофон, камера (video), завершить
-
-## Структура проекта
-lib/
-├── data/
-│   ├── api/          # Dio клиент + endpoints
-│   ├── model/        # JSON модели (json_serializable)
-│   ├── repository/   # Реализации репозиториев
-│   └── local/        # SecureStorage + SharedPreferences
-├── domain/
-│   ├── model/        # Domain модели
-│   ├── repository/   # Интерфейсы
-│   └── usecase/      # Use cases
-├── presentation/
-│   ├── screens/      # Экраны (StatelessWidget/BlocBuilder)
-│   ├── widgets/      # Переиспользуемые виджеты
-│   ├── bloc/         # BLoC классы (events, states, bloc)
-│   └── router/       # go_router конфигурация
-└── di/               # get_it + injectable модули
-
-## pubspec.yaml зависимости (основные)
-dependencies:
-  flutter_bloc: ^8.1.5
-  go_router: ^14.0.0
-  dio: ^5.4.3
-  web_socket_channel: ^3.0.0
-  get_it: ^7.7.0
-  injectable: ^2.4.0
-  flutter_secure_storage: ^9.2.2
-  shared_preferences: ^2.3.2
-  cached_network_image: ^3.3.1
-  image_picker: ^1.1.2
-  file_picker: ^8.1.2
-  json_annotation: ^4.9.0
-  intl: ^0.19.0
-
-dev_dependencies:
-  build_runner: ^2.4.11
-  json_serializable: ^6.8.0
-  injectable_generator: ^2.6.1
-
-## Требования
-1. Создай все файлы сразу — не пропускай ни один экран
-2. Каждый экран подключён к API и BLoC
-3. Ошибки сети → ScaffoldMessenger.of(context).showSnackBar(...)
-4. Загрузка → CircularProgressIndicator
-5. JWT автоматически в Dio Interceptor (с refresh логикой)
-6. WebSocket: переподключение при разрыве (exponential backoff)
-7. Тёмная тема через ThemeMode.system
-8. Все тексты на русском языке
-9. Минимальный SDK Flutter: 3.22, Dart: 3.4
-10. Android minSdkVersion: 26, iOS deployment target: 13.0
-11. Используй json_serializable + build_runner для моделей
-12. Не задавай вопросов — сразу пиши весь код
+Если приложение не поддерживает русский + таджикский + английский идеально и не работает на SQLite3 → задача считается НЕВЫПОЛНЕННОЙ.

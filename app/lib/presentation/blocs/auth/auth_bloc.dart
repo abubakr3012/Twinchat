@@ -145,6 +145,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return data['detail'] as String;
     }
     if (data is Map) {
+      if (data.isEmpty) return 'Не удалось выполнить запрос';
       final first = data.values.first;
       if (first is List && first.isNotEmpty) return first.first.toString();
       if (first is String) return first;

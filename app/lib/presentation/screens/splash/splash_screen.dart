@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import 'splash_cubit.dart';
 
 /// SplashScreen — проверяет наличие JWT и перенаправляет на
@@ -74,6 +74,7 @@ class _SplashViewState extends State<_SplashView>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       body: Container(
@@ -135,8 +136,8 @@ class _SplashViewState extends State<_SplashView>
                   Opacity(
                     opacity: _fadeIn.value,
                     child: Text(
-                      'TwinChat',
-                      style: GoogleFonts.inter(
+                      l10n.appName,
+                      style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -151,8 +152,8 @@ class _SplashViewState extends State<_SplashView>
                   Opacity(
                     opacity: _fadeIn.value,
                     child: Text(
-                      'Общение без границ',
-                      style: GoogleFonts.inter(
+                      l10n.tagline,
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
                         color: Colors.white.withOpacity(0.8),

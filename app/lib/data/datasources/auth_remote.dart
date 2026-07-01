@@ -69,8 +69,12 @@ class AuthRemoteDataSource {
       data: {'refresh': refresh},
     );
     final data = res.data ?? const {};
+    final access = data['access'] as String?;
+    if (access == null || access.isEmpty) {
+      throw Exception('Server did not return access token');
+    }
     return AuthSessionDto(
-      access: data['access'] as String,
+      access: access,
       refresh: (data['refresh'] as String?) ?? refresh,
       isNewUser: false,
     );

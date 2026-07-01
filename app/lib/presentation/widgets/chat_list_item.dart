@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'avatar_widget.dart';
 
@@ -76,7 +75,7 @@ class ChatListItem extends StatelessWidget {
                             const SizedBox(width: 8),
                             Text(
                               time!,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: unreadCount > 0
                                     ? scheme.primary
@@ -97,7 +96,7 @@ class ChatListItem extends StatelessWidget {
                           Expanded(
                             child: Text(
                               lastMessage ?? 'Нет сообщений',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 fontSize: 14,
                                 color: scheme.onSurfaceVariant,
                               ),
@@ -118,7 +117,7 @@ class ChatListItem extends StatelessWidget {
                                 unreadCount > 99
                                     ? '99+'
                                     : unreadCount.toString(),
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: scheme.onPrimary,

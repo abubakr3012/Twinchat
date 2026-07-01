@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
@@ -56,6 +56,7 @@ class _LoginViewState extends State<_LoginView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       body: SafeArea(
@@ -112,14 +113,14 @@ class _LoginViewState extends State<_LoginView> {
                         ),
                         const SizedBox(height: 32),
                         Text(
-                          'Добро пожаловать',
+                          l10n.welcome,
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Войдите в свой аккаунт TwinChat',
+                          l10n.loginHint,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: scheme.onSurfaceVariant,
                           ),
@@ -141,7 +142,7 @@ class _LoginViewState extends State<_LoginView> {
                           TextFormField(
                             controller: _usernameController,
                             decoration: InputDecoration(
-                              labelText: 'Имя пользователя',
+                              labelText: l10n.username,
                               hintText: 'twinchat_user',
                               prefixIcon:
                                   const Icon(Icons.person_outline_rounded, size: 22),
@@ -149,7 +150,7 @@ class _LoginViewState extends State<_LoginView> {
                             textInputAction: TextInputAction.next,
                             validator: (v) {
                               if (v == null || v.trim().isEmpty) {
-                                return 'Введите логин';
+                                return l10n.enterUsername;
                               }
                               return null;
                             },
@@ -162,8 +163,8 @@ class _LoginViewState extends State<_LoginView> {
                             controller: _passwordController,
                             obscureText: _obscure,
                             decoration: InputDecoration(
-                              labelText: 'Пароль',
-                              hintText: 'Введите пароль',
+                              labelText: l10n.password,
+                              hintText: l10n.enterPassword,
                               prefixIcon:
                                   const Icon(Icons.lock_outline_rounded, size: 22),
                               suffixIcon: IconButton(
@@ -180,7 +181,7 @@ class _LoginViewState extends State<_LoginView> {
                             textInputAction: TextInputAction.done,
                             onFieldSubmitted: (_) => _submit(context),
                             validator: (v) {
-                              if (v == null || v.isEmpty) return 'Введите пароль';
+                              if (v == null || v.isEmpty) return l10n.enterPassword;
                               return null;
                             },
                             enabled: !loading,
@@ -214,8 +215,8 @@ class _LoginViewState extends State<_LoginView> {
                                     ),
                                   )
                                 : Text(
-                                    'Войти',
-                                    style: GoogleFonts.inter(
+                                    l10n.login,
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -235,7 +236,7 @@ class _LoginViewState extends State<_LoginView> {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: Text(
-                                'или',
+                                l10n.or,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: scheme.onSurfaceVariant,
                                 ),
@@ -261,8 +262,8 @@ class _LoginViewState extends State<_LoginView> {
                               color: scheme.primary,
                             ),
                             label: Text(
-                              'Войти по SMS-коду',
-                              style: GoogleFonts.inter(
+                              l10n.smsLogin,
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: scheme.primary,
@@ -283,7 +284,7 @@ class _LoginViewState extends State<_LoginView> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Нет аккаунта? ',
+                              '${l10n.noAccount} ',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: scheme.onSurfaceVariant,
                               ),
@@ -298,8 +299,8 @@ class _LoginViewState extends State<_LoginView> {
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: Text(
-                                'Зарегистрироваться',
-                                style: GoogleFonts.inter(
+                                l10n.registerButton,
+                                style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),

@@ -39,8 +39,17 @@ class ChatSocket {
         onDone: _onDone,
         cancelOnError: true,
       );
-      _attempt = 0;
-      _connection.add(SocketConnectionState.connected);
+      ch.ready.then((_) {
+        if (!_disposed) {
+          _attempt = 0;
+          _connection.add(SocketConnectionState.connected);
+        }
+      }).catchError((_) {
+        if (!_disposed) {
+          _connection.add(SocketConnectionState.disconnected);
+          _scheduleReconnect();
+        }
+      });
     } catch (e) {
       _scheduleReconnect();
     }

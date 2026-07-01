@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Тема приложения TwinChat — Material Design 3, уникальный фирменный стиль.
 /// Бирюзовый/зелёный оттенок — ассоциация с общением и коммуникацией.
@@ -98,7 +97,7 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 1,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: scheme.onSurface,
@@ -113,13 +112,13 @@ class AppTheme {
         elevation: 2,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.inter(
+            return TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: scheme.primary,
             );
           }
-          return GoogleFonts.inter(
+          return TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w400,
             color: scheme.onSurfaceVariant,
@@ -154,8 +153,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: scheme.error, width: 2),
         ),
-        labelStyle: GoogleFonts.inter(color: scheme.onSurfaceVariant),
-        hintStyle: GoogleFonts.inter(color: scheme.onSurfaceVariant.withOpacity(0.6)),
+        labelStyle: TextStyle(color: scheme.onSurfaceVariant),
+        hintStyle: TextStyle(color: scheme.onSurfaceVariant.withOpacity(0.6)),
         prefixIconColor: scheme.onSurfaceVariant,
         suffixIconColor: scheme.onSurfaceVariant,
       ),
@@ -171,7 +170,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -187,7 +186,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -196,7 +195,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: scheme.primary,
-          textStyle: GoogleFonts.inter(
+          textStyle: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -225,7 +224,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: scheme.onSurface,
@@ -245,7 +244,7 @@ class AppTheme {
       // ─── Snackbar ────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
         backgroundColor: scheme.inverseSurface,
-        contentTextStyle: GoogleFonts.inter(
+        contentTextStyle: TextStyle(
           color: scheme.onInverseSurface,
           fontSize: 14,
         ),
@@ -260,7 +259,7 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: scheme.secondaryContainer.withOpacity(0.5),
         selectedColor: scheme.primaryContainer,
-        labelStyle: GoogleFonts.inter(fontSize: 14),
+        labelStyle: const TextStyle(fontSize: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
           side: BorderSide(color: scheme.outline.withOpacity(0.3)),
@@ -281,12 +280,12 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
           color: scheme.onSurface,
         ),
-        subtitleTextStyle: GoogleFonts.inter(
+        subtitleTextStyle: TextStyle(
           fontSize: 14,
           color: scheme.onSurfaceVariant,
         ),
@@ -296,77 +295,77 @@ class AppTheme {
 
   static TextTheme _textTheme(ColorScheme scheme) {
     return TextTheme(
-      displayLarge: GoogleFonts.inter(
+      displayLarge: TextStyle(
         fontSize: 57,
         fontWeight: FontWeight.w400,
         color: scheme.onSurface,
       ),
-      displayMedium: GoogleFonts.inter(
+      displayMedium: TextStyle(
         fontSize: 45,
         fontWeight: FontWeight.w400,
         color: scheme.onSurface,
       ),
-      displaySmall: GoogleFonts.inter(
+      displaySmall: TextStyle(
         fontSize: 36,
         fontWeight: FontWeight.w400,
         color: scheme.onSurface,
       ),
-      headlineLarge: GoogleFonts.inter(
+      headlineLarge: TextStyle(
         fontSize: 32,
         fontWeight: FontWeight.w600,
         color: scheme.onSurface,
       ),
-      headlineMedium: GoogleFonts.inter(
+      headlineMedium: TextStyle(
         fontSize: 28,
         fontWeight: FontWeight.w600,
         color: scheme.onSurface,
       ),
-      headlineSmall: GoogleFonts.inter(
+      headlineSmall: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.w600,
         color: scheme.onSurface,
       ),
-      titleLarge: GoogleFonts.inter(
+      titleLarge: TextStyle(
         fontSize: 22,
         fontWeight: FontWeight.w600,
         color: scheme.onSurface,
       ),
-      titleMedium: GoogleFonts.inter(
+      titleMedium: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: scheme.onSurface,
       ),
-      titleSmall: GoogleFonts.inter(
+      titleSmall: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: scheme.onSurface,
       ),
-      bodyLarge: GoogleFonts.inter(
+      bodyLarge: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w400,
         color: scheme.onSurface,
       ),
-      bodyMedium: GoogleFonts.inter(
+      bodyMedium: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w400,
         color: scheme.onSurface,
       ),
-      bodySmall: GoogleFonts.inter(
+      bodySmall: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w400,
         color: scheme.onSurfaceVariant,
       ),
-      labelLarge: GoogleFonts.inter(
+      labelLarge: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: scheme.onSurface,
       ),
-      labelMedium: GoogleFonts.inter(
+      labelMedium: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w500,
         color: scheme.onSurface,
       ),
-      labelSmall: GoogleFonts.inter(
+      labelSmall: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w500,
         color: scheme.onSurfaceVariant,

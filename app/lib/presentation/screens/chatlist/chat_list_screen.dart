@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../domain/entities/chat.dart';
 import '../../../domain/entities/contact.dart';
 import '../../../domain/entities/story.dart';
@@ -31,6 +32,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return BlocProvider<ChatListBloc>(
       create: (_) => ChatListBloc(
@@ -40,8 +42,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            'TwinChat',
-            style: GoogleFonts.inter(
+            l10n.appName,
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: scheme.primary,
@@ -79,7 +81,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       Icon(Icons.person_outline_rounded,
                           color: scheme.onSurface, size: 22),
                       const SizedBox(width: 12),
-                      const Text('Мой профиль'),
+                       Text(l10n.myProfile),
                     ],
                   ),
                 ),
@@ -90,7 +92,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       Icon(Icons.settings_outlined,
                           color: scheme.onSurface, size: 22),
                       const SizedBox(width: 12),
-                      const Text('Настройки'),
+                      Text(l10n.settings),
                     ],
                   ),
                 ),
@@ -124,21 +126,21 @@ class _ChatListScreenState extends State<ChatListScreen> {
         bottomNavigationBar: NavigationBar(
           selectedIndex: _tab,
           onDestinationSelected: (i) => setState(() => _tab = i),
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.chat_bubble_outline_rounded),
-              selectedIcon: Icon(Icons.chat_bubble_rounded),
-              label: 'Чаты',
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+              selectedIcon: const Icon(Icons.chat_bubble_rounded),
+              label: l10n.chats,
             ),
             NavigationDestination(
-              icon: Icon(Icons.contacts_outlined),
-              selectedIcon: Icon(Icons.contacts_rounded),
-              label: 'Контакты',
+              icon: const Icon(Icons.contacts_outlined),
+              selectedIcon: const Icon(Icons.contacts_rounded),
+              label: l10n.contacts,
             ),
             NavigationDestination(
-              icon: Icon(Icons.auto_stories_outlined),
-              selectedIcon: Icon(Icons.auto_stories_rounded),
-              label: 'Истории',
+              icon: const Icon(Icons.auto_stories_outlined),
+              selectedIcon: const Icon(Icons.auto_stories_rounded),
+              label: l10n.stories,
             ),
           ],
         ),
@@ -147,8 +149,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 onPressed: () => _showCreateChat(context),
                 icon: const Icon(Icons.edit_rounded, size: 20),
                 label: Text(
-                  'Новый чат',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  l10n.newChat,
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 backgroundColor: scheme.primary,
                 foregroundColor: scheme.onPrimary,
@@ -159,7 +161,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               )
             : (_tab == 1
                 ? FloatingActionButton(
-                    onPressed: () => context.go('/contacts'),
+                    onPressed: () => context.push('/contacts'),
                     backgroundColor: scheme.primary,
                     foregroundColor: scheme.onPrimary,
                     shape: RoundedRectangleBorder(
@@ -174,15 +176,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   void _showLogoutDialog(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Выйти из аккаунта?'),
-        content: const Text('Вы уверены, что хотите выйти?'),
+        title: Text(l10n.logout),
+        content: Text('${l10n.logout}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Отмена'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -193,7 +196,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
             style: FilledButton.styleFrom(
               backgroundColor: scheme.error,
             ),
-            child: const Text('Выйти'),
+            child: Text(l10n.logout),
           ),
         ],
       ),
@@ -201,15 +204,25 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   void _showCreateChat(BuildContext context) {
-    final bloc = context.read<ChatListBloc>();
     showDialog<void>(
       context: context,
       builder: (_) => BlocProvider.value(
-        value: bloc,
+        value: context.read<ChatListBloc>(),
         child: const _CreateChatDialog(),
       ),
     );
   }
+
+}
+
+void _showGroupSettings(BuildContext context, Chat chat) {
+  showDialog<void>(
+    context: context,
+    builder: (_) => BlocProvider.value(
+      value: context.read<ChatListBloc>(),
+      child: _GroupSettingsDialog(chat: chat),
+    ),
+  );
 }
 
 class _ChatsTab extends StatelessWidget {
@@ -219,6 +232,7 @@ class _ChatsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return BlocBuilder<ChatListBloc, ChatListState>(
       builder: (context, state) {
@@ -256,7 +270,7 @@ class _ChatsTab extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Ошибка загрузки',
+                    l10n.errorLoading,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -275,7 +289,7 @@ class _ChatsTab extends StatelessWidget {
                         .read<ChatListBloc>()
                         .add(const ChatListRefresh()),
                     icon: const Icon(Icons.refresh_rounded, size: 20),
-                    label: const Text('Повторить'),
+                    label: Text(l10n.retry),
                   ),
                 ],
               ),
@@ -308,14 +322,14 @@ class _ChatsTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'Нет чатов',
+                        l10n.noChats,
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Нажмите кнопку "Новый чат"\nчтобы начать общение',
+                        l10n.noChatsHint,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: scheme.onSurfaceVariant,
@@ -342,6 +356,9 @@ class _ChatsTab extends StatelessWidget {
                 chat: chat,
                 name: name,
                 onTap: () => context.go('/chat/${chat.id}'),
+                onGroupSettings: chat.type == ChatType.group
+                    ? () => _showGroupSettings(context, chat)
+                    : null,
               );
             },
           ),
@@ -356,16 +373,19 @@ class _ChatListItem extends StatelessWidget {
     required this.chat,
     required this.name,
     required this.onTap,
+    this.onGroupSettings,
   });
 
   final Chat chat;
   final String name;
   final VoidCallback onTap;
+  final VoidCallback? onGroupSettings;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
@@ -404,7 +424,7 @@ class _ChatListItem extends StatelessWidget {
                   child: Center(
                     child: Text(
                       name.isEmpty ? '?' : name.characters.first.toUpperCase(),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: scheme.onPrimary,
@@ -429,7 +449,7 @@ class _ChatListItem extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _chatTypeLabel(chat.type),
+                        _chatTypeLabel(chat.type, l10n),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
@@ -441,6 +461,13 @@ class _ChatListItem extends StatelessWidget {
                 ),
 
                 // Trailing
+                if (onGroupSettings != null)
+                  IconButton(
+                    icon: Icon(Icons.settings_outlined,
+                        color: scheme.onSurfaceVariant, size: 22),
+                    tooltip: 'Настройки группы',
+                    onPressed: onGroupSettings,
+                  ),
                 Icon(
                   Icons.chevron_right_rounded,
                   color: scheme.onSurfaceVariant.withOpacity(0.5),
@@ -454,14 +481,14 @@ class _ChatListItem extends StatelessWidget {
     );
   }
 
-  String _chatTypeLabel(ChatType t) {
+  String _chatTypeLabel(ChatType t, AppLocalizations l10n) {
     switch (t) {
       case ChatType.private:
-        return 'Личный чат';
+        return l10n.personalChat;
       case ChatType.group:
-        return 'Групповой чат';
+        return l10n.groupChat;
       case ChatType.unknown:
-        return 'Чат';
+        return l10n.chats;
     }
   }
 }
@@ -476,6 +503,7 @@ class _CreateChatDialog extends StatefulWidget {
 class _CreateChatDialogState extends State<_CreateChatDialog> {
   final _name = TextEditingController();
   ChatType _type = ChatType.private;
+  String? _errorText;
 
   @override
   void dispose() {
@@ -484,6 +512,12 @@ class _CreateChatDialogState extends State<_CreateChatDialog> {
   }
 
   void _submit(BuildContext context) {
+    if (_type == ChatType.group && _name.text.trim().isEmpty) {
+      setState(() {
+        _errorText = AppLocalizations.of(context).emptyGroupName;
+      });
+      return;
+    }
     context.read<ChatListBloc>().add(
           ChatListCreate(
             type: _type,
@@ -497,13 +531,14 @@ class _CreateChatDialogState extends State<_CreateChatDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return AlertDialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
       title: Text(
-        'Новый чат',
+        l10n.newChat,
         style: theme.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w600,
         ),
@@ -512,16 +547,16 @@ class _CreateChatDialogState extends State<_CreateChatDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           SegmentedButton<ChatType>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: ChatType.private,
-                label: Text('Личный'),
-                icon: Icon(Icons.person_outline_rounded, size: 18),
+                label: Text(l10n.private),
+                icon: const Icon(Icons.person_outline_rounded, size: 18),
               ),
               ButtonSegment(
                 value: ChatType.group,
-                label: Text('Группа'),
-                icon: Icon(Icons.group_outlined, size: 18),
+                label: Text(l10n.group),
+                icon: const Icon(Icons.group_outlined, size: 18),
               ),
             ],
             selected: {_type},
@@ -536,16 +571,21 @@ class _CreateChatDialogState extends State<_CreateChatDialog> {
             TextField(
               controller: _name,
               decoration: InputDecoration(
-                labelText: 'Название группы',
-                hintText: 'Моя группа',
+                labelText: l10n.groupName,
+                hintText: l10n.groupNameHint,
+                errorText: _errorText,
                 prefixIcon: const Icon(Icons.group_outlined, size: 22),
               ),
+              onChanged: (val) {
+                if (_errorText != null && val.trim().isNotEmpty) {
+                  setState(() => _errorText = null);
+                }
+              },
             ),
           ],
           const SizedBox(height: 12),
           Text(
-            'Сейчас сервер поддерживает создание чата одним участником. '
-            'Добавление членов появится в следующей версии.',
+            l10n.chatLimitNote,
             style: theme.textTheme.bodySmall?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
@@ -556,11 +596,51 @@ class _CreateChatDialogState extends State<_CreateChatDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Отмена'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: () => _submit(context),
-          child: const Text('Создать'),
+          child: Text(l10n.create),
+        ),
+      ],
+    );
+  }
+}
+
+class _GroupSettingsDialog extends StatelessWidget {
+  const _GroupSettingsDialog({required this.chat});
+
+  final Chat chat;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      title: Text(chat.name ?? l10n.groupNameTitle),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: Icon(Icons.info_outline, color: scheme.primary),
+            title: Text(l10n.title),
+            subtitle: Text(chat.name ?? l10n.noName),
+          ),
+          ListTile(
+            leading: Icon(Icons.people_outline, color: scheme.primary),
+            title: Text(l10n.members),
+            subtitle: Text('${chat.members.length}'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.close),
         ),
       ],
     );
@@ -569,13 +649,130 @@ class _CreateChatDialogState extends State<_CreateChatDialog> {
 
 // ─── Stub tabs ──────────────────────────────────────────────────────
 
-class _ContactsTab extends StatelessWidget {
+class _ContactsTab extends StatefulWidget {
   const _ContactsTab();
+
+  @override
+  State<_ContactsTab> createState() => _ContactsTabState();
+}
+
+class _ContactsTabState extends State<_ContactsTab> {
+  bool _hasPermission = false;
+  bool _checkingPermission = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermission();
+  }
+
+  Future<void> _checkPermission() async {
+    final status = await Permission.contacts.status;
+    if (mounted) {
+      setState(() {
+        _hasPermission = status.isGranted;
+        _checkingPermission = false;
+      });
+    }
+  }
+
+  Future<void> _requestPermission() async {
+    final status = await Permission.contacts.request();
+    if (mounted) {
+      setState(() => _hasPermission = status.isGranted);
+    }
+  }
+
+  Future<void> _openChatWithContact(
+      BuildContext context, Contact c) async {
+    try {
+      // Create or find private chat with the contact user
+      final chatsRepo = GetIt.I<ChatsRepository>();
+      final chats = await chatsRepo.list();
+      // Try to find existing private chat with this user
+      Chat? existing;
+      try {
+        existing = chats.firstWhere(
+          (ch) =>
+              ch.type == ChatType.private &&
+              ch.members.any((m) => m.userId == c.contactId),
+        );
+      } catch (_) {
+        existing = null;
+      }
+      if (existing != null) {
+        if (context.mounted) context.go('/chat/${existing.id}');
+      } else {
+        // Create new private chat and add the contact as a member
+        final newChat = await chatsRepo.create(type: ChatType.private);
+        await chatsRepo.addMember(chatId: newChat.id, userId: c.contactId);
+        if (context.mounted) context.go('/chat/${newChat.id}');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка открытия чата: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+
+    if (_checkingPermission) {
+      return Center(child: CircularProgressIndicator(color: scheme.primary));
+    }
+
+    if (!_hasPermission) {
+      final l10n = AppLocalizations.of(context);
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.contacts_outlined,
+                  size: 40,
+                  color: scheme.primary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                l10n.allowContactAccess,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.allowContactAccessHint,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _requestPermission,
+                icon: const Icon(Icons.contacts_rounded, size: 20),
+                label: Text(l10n.allowContactAccess),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return BlocProvider<ContactsBloc>(
       create: (_) => ContactsBloc(
@@ -584,6 +781,7 @@ class _ContactsTab extends StatelessWidget {
       )..add(const ContactsLoad()),
       child: BlocBuilder<ContactsBloc, ContactsState>(
         builder: (context, state) {
+          final l10n = AppLocalizations.of(context);
           if (state is ContactsInitial || state is ContactsLoading) {
             return Center(
               child: CircularProgressIndicator(color: scheme.primary),
@@ -595,10 +793,11 @@ class _ContactsTab extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.contacts_outlined, size: 64, color: scheme.primary.withOpacity(0.5)),
+                  Icon(Icons.contacts_outlined,
+                      size: 64, color: scheme.primary.withOpacity(0.5)),
                   const SizedBox(height: 16),
                   Text(
-                    'Контактов пока нет',
+                    l10n.noContacts,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -634,7 +833,18 @@ class _ContactsTab extends StatelessWidget {
                   ),
                   title: Text(c.displayName),
                   subtitle: Text('@${c.username}'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.message_rounded,
+                            color: scheme.primary, size: 22),
+                        tooltip: l10n.openChat,
+                        onPressed: () => _openChatWithContact(context, c),
+                      ),
+                      const Icon(Icons.chevron_right_rounded),
+                    ],
+                  ),
                   onTap: () => context.go('/profile/${c.contactId}'),
                 );
               },
@@ -653,6 +863,7 @@ class _StoriesTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return BlocProvider<StoriesBloc>(
       create: (_) => StoriesBloc(repository: GetIt.I<StoriesRepository>())
@@ -673,14 +884,14 @@ class _StoriesTab extends StatelessWidget {
                   Icon(Icons.auto_stories_outlined, size: 64, color: scheme.primary.withOpacity(0.5)),
                   const SizedBox(height: 16),
                   Text(
-                    'Историй пока нет',
+                    l10n.noStoriesHint,
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Создайте первую историю',
+                    l10n.createFirstStory,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -702,13 +913,13 @@ class _StoriesTab extends StatelessWidget {
                   leading: CircleAvatar(
                     backgroundColor: scheme.primaryContainer,
                     child: Text(
-                      story.username?.isNotEmpty == true
-                          ? story.username!.characters.first.toUpperCase()
+                      story.username.isNotEmpty
+                          ? story.username.characters.first.toUpperCase()
                           : '?',
                       style: TextStyle(color: scheme.onPrimaryContainer),
                     ),
                   ),
-                  title: Text(story.username ?? 'Пользователь'),
+                  title: Text(story.username),
                   subtitle: Text(
                     story.mediaType == 'video' ? 'Видео' : 'Фото',
                     style: TextStyle(color: scheme.onSurfaceVariant),

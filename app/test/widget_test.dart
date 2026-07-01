@@ -7,12 +7,12 @@ import 'package:twinchat/presentation/widgets/message_bubble.dart';
 import 'package:twinchat/presentation/widgets/message_status_icon.dart';
 
 void main() {
-  group('AvatarWidget', () {
+  group('UserAvatar', () {
     testWidgets('показывает инициалы когда url == null', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AvatarWidget(name: 'Alice', size: 48),
+            body: UserAvatar(name: 'Alice', size: 48),
           ),
         ),
       );
@@ -23,7 +23,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AvatarWidget(name: 'Anna Petrova', size: 48),
+            body: UserAvatar(name: 'Anna Petrova', size: 48),
           ),
         ),
       );

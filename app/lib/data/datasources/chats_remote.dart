@@ -25,4 +25,28 @@ class ChatsRemote {
     );
     return ChatDto.fromJson(res.data ?? const {});
   }
+
+  Future<ChatDto> addMember(
+      {required int chatId, required int userId}) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      'chats/$chatId/members/',
+      data: {'user_id': userId},
+    );
+    return ChatDto.fromJson(res.data ?? const {});
+  }
+
+  Future<ChatDto> updateGroup({
+    required int chatId,
+    String? name,
+    String? avatarUrl,
+  }) async {
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    if (avatarUrl != null) body['avatar'] = avatarUrl;
+    final res = await _dio.patch<Map<String, dynamic>>(
+      'chats/$chatId/',
+      data: body,
+    );
+    return ChatDto.fromJson(res.data ?? const {});
+  }
 }

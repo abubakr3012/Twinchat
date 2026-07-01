@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
@@ -107,9 +107,10 @@ class _CodeViewState extends State<_CodeView> {
     context.read<AuthBloc>().add(AuthRequestCode(widget.phoneNumber));
   }
 
-  void _pasteFromClipboard(BuildContext context) async {
+  Future<void> _pasteFromClipboard(BuildContext context) async {
     final bloc = context.read<AuthBloc>();
     final data = await Clipboard.getData('text/plain');
+    if (!mounted) return;
     final text = (data?.text ?? '').replaceAll(RegExp(r'[^0-9]'), '');
     if (text.length >= 4) {
       for (var i = 0; i < 6 && i < text.length; i++) {
@@ -132,6 +133,7 @@ class _CodeViewState extends State<_CodeView> {
 
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       body: SafeArea(
@@ -153,7 +155,7 @@ class _CodeViewState extends State<_CodeView> {
                 ..showSnackBar(
                   SnackBar(
                     content: Text(
-                        'Код отправлен повторно на ${state.phoneNumber}'),
+                        '${l10n.codeResentTo} ${state.phoneNumber}'),
                   ),
                 );
               return;
@@ -217,7 +219,7 @@ class _CodeViewState extends State<_CodeView> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'Введите код',
+                          l10n.enterCode,
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -225,7 +227,7 @@ class _CodeViewState extends State<_CodeView> {
                         const SizedBox(height: 8),
                         Text.rich(
                           TextSpan(
-                            text: 'Код отправлен на ',
+                            text: '${l10n.codeSentTo} ',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: scheme.onSurfaceVariant,
                             ),
@@ -264,7 +266,7 @@ class _CodeViewState extends State<_CodeView> {
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
                             ],
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w700,
                               color: scheme.onSurface,
@@ -336,8 +338,8 @@ class _CodeViewState extends State<_CodeView> {
                                     color: scheme.primary,
                                   ),
                                   label: Text(
-                                    'Вставить из буфера',
-                                    style: GoogleFonts.inter(
+                                    l10n.pasteFromClipboard,
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                       color: scheme.primary,
@@ -364,8 +366,8 @@ class _CodeViewState extends State<_CodeView> {
                                   color: scheme.onSurfaceVariant,
                                 ),
                                 label: Text(
-                                  'Отправить код повторно',
-                                  style: GoogleFonts.inter(
+                                  l10n.resendCode,
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w500,
                                     color: scheme.onSurfaceVariant,
                                   ),

@@ -1,3 +1,4 @@
+import '../../core/error/failure.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote.dart';
@@ -81,7 +82,11 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<String> refresh() async {
-    final dto = await _remote.refreshToken(await _storage.readRefresh() ?? '');
+    final refresh = await _storage.readRefresh();
+    if (refresh == null || refresh.isEmpty) {
+      throw const AuthFailure('No refresh token available');
+    }
+    final dto = await _remote.refreshToken(refresh);
     await _storage.saveTokens(access: dto.access, refresh: dto.refresh);
     return dto.access;
   }

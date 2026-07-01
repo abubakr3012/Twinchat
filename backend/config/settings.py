@@ -1,19 +1,35 @@
 """
-Django settings for config project.
+Django settings for config project - Production Ready.
 """
 
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-)y4(r0neza0j8phklq7(9nizjp+6=82$c3#g-j%@jd5+iuxii@'
+# Load .env file from the project root if it exists
+env_path = BASE_DIR.parent / '.env'
+if env_path.exists():
+    with open(env_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            if '=' in line:
+                key, val = line.split('=', 1)
+                os.environ.setdefault(key.strip(), val.strip())
 
-DEBUG = True
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-fallback-key-change-in-production'
+)
 
-ALLOWED_HOSTS = ['*']
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -29,16 +45,17 @@ INSTALLED_APPS = [
     'contacts',
     'attachments',
     'reactions',
-    'settings',   
+    'settings',
     'calls',
     'stories',
     'encryption',
-    'corsheaders'
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'config.csrf_exempt_api.CsrfExemptApiMiddleware',
@@ -48,7 +65,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -77,7 +94,9 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],
+            'hosts': [os.environ.get('REDIS_URL', 'redis://redis:6379/0')],
+            'capacity': 1500,
+            'expiry': 10,
         },
     },
 }
@@ -116,8 +135,16 @@ SPECTACULAR_SETTINGS = {
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('POSTGRES_DB', 'twinchat'),
+        'USER': os.environ.get('POSTGRES_USER', 'twinchat'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'twinchat_secure_pass_2024'),
+        'HOST': os.environ.get('POSTGRES_HOST', 'postgres'),
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        'CONN_MAX_AGE': 600,
+        'OPTIONS': {
+            'connect_timeout': 10,
+        },
     }
 }
 
@@ -134,8 +161,53 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 AUTH_USER_MODEL = 'users.User'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'channels': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

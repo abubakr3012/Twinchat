@@ -30,7 +30,6 @@ void main() {
     });
 
     test('base64 roundtrip сохраняет payload', () {
-      final key = AesGcm.generateKey();
       final iv = Uint8List.fromList(List.generate(12, (i) => i + 1));
       final ctWithTag = Uint8List.fromList(List.generate(64, (i) => i));
       final cipher = AesGcmCipher(iv: iv, ciphertextWithTag: ctWithTag);
@@ -54,7 +53,7 @@ void main() {
   group('X25519', () {
     test('генерация ключей даёт 32-байтовые пары', () async {
       final pair = await X25519KeyGenerator.generate();
-      expect(pair.privateKey.length, 32);
+      expect(pair.privateSeed.length, 32);
       expect(pair.publicKey.length, 32);
     });
 

@@ -5,10 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../domain/entities/attachment.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../domain/repositories/attachments_repository.dart';
 import '../../../domain/repositories/users_repository.dart';
 import '../../blocs/profile/my_profile_bloc.dart';
@@ -37,7 +36,7 @@ class _MyProfileViewState extends State<_MyProfileView> {
   final _username = TextEditingController();
   final _email = TextEditingController();
   final _bio = TextEditingController();
-  bool _filled = false;
+  int? _lastFilledUserId;
 
   @override
   void dispose() {
@@ -61,19 +60,20 @@ class _MyProfileViewState extends State<_MyProfileView> {
     final bloc = context.read<MyProfileBloc>();
 
     // Show loading
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(
+      builder: (_) => Center(
         child: Card(
           child: Padding(
-            padding: EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Загрузка аватара...'),
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(l10n.loading),
               ],
             ),
           ),
@@ -100,20 +100,21 @@ class _MyProfileViewState extends State<_MyProfileView> {
       if (context.mounted) {
         Navigator.of(context).pop(); // dismiss loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Аватар обновлён')),
+          SnackBar(content: Text(l10n.avatarUpdated)),
         );
       }
     } catch (e) {
       if (context.mounted) {
         Navigator.of(context).pop(); // dismiss loading
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка загрузки: $e')),
+          SnackBar(content: Text('${l10n.errorLoading}: $e')),
         );
       }
     }
   }
 
   Future<void> _edit(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
     final bloc = context.read<MyProfileBloc>();
     final state = bloc.state;
     if (state is! ProfileReady) return;
@@ -122,59 +123,82 @@ class _MyProfileViewState extends State<_MyProfileView> {
     _bio.text = state.user.bio ?? '';
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Редактировать профиль'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _username,
-              decoration: const InputDecoration(labelText: 'Логин'),
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(l10n.editProfile),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _username,
+                decoration: InputDecoration(
+                  labelText: l10n.username,
+                  prefixIcon: const Icon(Icons.alternate_email_rounded),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: l10n.email,
+                  prefixIcon: const Icon(Icons.email_outlined),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _bio,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: l10n.profile,
+                  prefixIcon: const Icon(Icons.info_outline_rounded),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(false),
+              child: Text(l10n.cancel),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _email,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _bio,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'О себе'),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(true),
+              child: Text(l10n.save),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Отмена'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Сохранить'),
-          ),
-        ],
       ),
     );
     if (ok != true) return;
+    if (!context.mounted) return;
+    final username = _username.text.trim();
+    final email = _email.text.trim();
+    final bio = _bio.text.trim();
     bloc.add(ProfileUpdateMe(
-      username: _username.text.trim(),
-      email: _email.text.trim(),
-      bio: _bio.text.trim(),
+      username: username.isNotEmpty ? username : null,
+      email: email.isNotEmpty ? email : null,
+      bio: bio.isNotEmpty ? bio : null,
     ));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.profileUpdated)),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Мой профиль',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          l10n.myProfile,
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
@@ -203,11 +227,11 @@ class _MyProfileViewState extends State<_MyProfileView> {
             );
           }
           final ready = state as ProfileReady;
-          if (!_filled) {
+          if (_lastFilledUserId != ready.user.id) {
             _username.text = ready.user.username;
             _email.text = ready.user.email ?? '';
             _bio.text = ready.user.bio ?? '';
-            _filled = true;
+            _lastFilledUserId = ready.user.id;
           }
           final user = ready.user;
           return ListView(
@@ -247,7 +271,7 @@ class _MyProfileViewState extends State<_MyProfileView> {
                                         user.username.isNotEmpty
                                             ? user.username[0].toUpperCase()
                                             : '?',
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 40,
                                           fontWeight: FontWeight.w700,
                                           color: scheme.onPrimaryContainer,
@@ -262,7 +286,7 @@ class _MyProfileViewState extends State<_MyProfileView> {
                                         user.username.isNotEmpty
                                             ? user.username[0].toUpperCase()
                                             : '?',
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(
                                           fontSize: 40,
                                           fontWeight: FontWeight.w700,
                                           color: scheme.onPrimaryContainer,
@@ -289,7 +313,7 @@ class _MyProfileViewState extends State<_MyProfileView> {
                                     user.username.isNotEmpty
                                         ? user.username[0].toUpperCase()
                                         : '?',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(
                                       fontSize: 40,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
@@ -348,25 +372,25 @@ class _MyProfileViewState extends State<_MyProfileView> {
               // Info cards
               _InfoCard(
                 icon: Icons.alternate_email_rounded,
-                label: 'Email',
-                value: user.email ?? 'Не указан',
+                label: l10n.email,
+                value: user.email ?? l10n.notSpecified,
               ),
               const SizedBox(height: 12),
               _InfoCard(
                 icon: Icons.phone_rounded,
-                label: 'Телефон',
-                value: user.phoneNumber ?? 'Не указан',
+                label: l10n.phone,
+                value: user.phoneNumber ?? l10n.notSpecified,
               ),
               const SizedBox(height: 12),
               _InfoCard(
                 icon: Icons.info_outline_rounded,
-                label: 'О себе',
-                value: user.bio ?? 'Не указано',
+                label: l10n.profile,
+                value: user.bio ?? l10n.notSpecified,
               ),
               const SizedBox(height: 12),
               _InfoCard(
                 icon: Icons.access_time_rounded,
-                label: 'Был в сети',
+                label: l10n.wasOnline,
                 value: user.lastSeen?.toLocal().toString() ?? '—',
               ),
             ],

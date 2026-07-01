@@ -15,7 +15,7 @@ class UserDto {
   });
 
   factory UserDto.fromJson(Map<String, dynamic> json) => UserDto(
-        id: (json['id'] as num).toInt(),
+        id: (json['id'] as num?)?.toInt() ?? 0,
         username: json['username'] as String,
         email: json['email'] as String?,
         phoneNumber: json['phone_number'] as String?,
@@ -69,8 +69,8 @@ class AuthSessionDto {
   });
 
   factory AuthSessionDto.fromJson(Map<String, dynamic> json) => AuthSessionDto(
-        access: json['access'] as String,
-        refresh: json['refresh'] as String,
+        access: json['access'] as String? ?? '',
+        refresh: json['refresh'] as String? ?? '',
         isNewUser: json['is_new_user'] as bool? ?? false,
         user: json['user'] is Map<String, dynamic>
             ? UserDto.fromJson(json['user'] as Map<String, dynamic>)

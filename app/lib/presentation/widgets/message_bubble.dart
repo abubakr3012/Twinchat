@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// "Пузырь" сообщения в чате с современным дизайном.
 class MessageBubble extends StatelessWidget {
@@ -76,7 +75,7 @@ class MessageBubble extends StatelessWidget {
                 Flexible(
                   child: Text(
                     text,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: fg,
                       fontSize: 15,
                       height: 1.4,
@@ -93,7 +92,7 @@ class MessageBubble extends StatelessWidget {
                   if (time != null)
                     Text(
                       time!,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: fg.withOpacity(0.55),
                         fontSize: 11,
                       ),

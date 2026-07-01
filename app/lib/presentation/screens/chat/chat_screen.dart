@@ -3,18 +3,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
+import 'package:translator/translator.dart';
+import 'dart:async';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/storage/token_storage.dart';
+import '../../../core/utils/locale_provider.dart';
 import '../../../core/utils/text_size_provider.dart';
 import '../../../domain/entities/message.dart';
 import '../../../domain/repositories/attachments_repository.dart';
 import '../../../domain/repositories/messages_repository.dart';
 import '../../../domain/repositories/reactions_repository.dart';
+import '../../../domain/repositories/settings_repository.dart';
 import '../../../domain/repositories/users_repository.dart';
 import '../../blocs/chat/chat_bloc.dart';
+import '../../widgets/message_bubble.dart';
+import '../../widgets/message_input.dart';
 
 class ChatScreen extends StatelessWidget {
   const ChatScreen({super.key, required this.chatId});
@@ -47,13 +55,56 @@ class _ChatViewState extends State<_ChatView> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
   final _picker = ImagePicker();
+  final _translator = GoogleTranslator();
+  final _audioRecorder = AudioRecorder();
+  Timer? _recordingTimer;
   bool _typing = false;
   bool _isUploading = false;
+  bool _autoTranslate = false;
+  String _userLanguage = 'ru';
+  bool _isRecording = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final settingsRepo = GetIt.I<SettingsRepository>();
+      final language = await settingsRepo.getLanguage();
+      setState(() {
+        _autoTranslate = language.autoTranslate;
+        _userLanguage = language.language;
+      });
+    } catch (e) {
+      // Use defaults if settings fail
+    }
+  }
+
+  Future<String> _translateIfNeeded(String text, String senderLanguage) async {
+    if (!_autoTranslate || senderLanguage == _userLanguage) {
+      return text;
+    }
+    try {
+      final translation = await _translator.translate(
+        text,
+        from: senderLanguage,
+        to: _userLanguage,
+      );
+      return translation.text;
+    } catch (e) {
+      return text; // Return original if translation fails
+    }
+  }
 
   @override
   void dispose() {
     _controller.dispose();
     _scroll.dispose();
+    _recordingTimer?.cancel();
+    _audioRecorder.dispose();
     super.dispose();
   }
 
@@ -103,11 +154,99 @@ class _ChatViewState extends State<_ChatView> {
     }
   }
 
-  void _recordAndSendVoice() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Запись голосовых сообщений будет добавлена в следующей версии')),
-    );
+  Future<void> _recordAndSendVoice() async {
+    if (_isRecording) {
+      // Stop recording
+      final path = await _audioRecorder.stop();
+      if (mounted) setState(() => _isRecording = false);
+      _recordingTimer?.cancel();
+      
+      if (path != null) {
+        await _sendVoiceFile(path);
+      }
+    } else {
+      // Start recording — request permission through permission_handler first
+      try {
+        final status = await Permission.microphone.request();
+        if (!status.isGranted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Разрешение на запись микрофона не выдано')),
+            );
+          }
+          return;
+        }
+        if (await _audioRecorder.hasPermission()) {
+          final dir = await getTemporaryDirectory();
+          final filePath =
+              '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+          await _audioRecorder.start(
+            const RecordConfig(
+              encoder: AudioEncoder.aacLc,
+              bitRate: 128000,
+              sampleRate: 44100,
+            ),
+            path: filePath,
+          );
+          if (mounted) setState(() => _isRecording = true);
+          
+          _recordingTimer?.cancel();
+          _recordingTimer = Timer(const Duration(seconds: 60), () async {
+            if (!mounted || !_isRecording) return;
+            final path = await _audioRecorder.stop();
+            if (mounted) setState(() => _isRecording = false);
+            if (path != null) {
+              await _sendVoiceFile(path);
+            }
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ошибка записи: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _sendVoiceFile(String path) async {
+    if (_isUploading) return;
+    setState(() => _isUploading = true);
+    try {
+      final messagesRepo = GetIt.I<MessagesRepository>();
+      final attachmentsRepo = GetIt.I<AttachmentsRepository>();
+
+      final message = await messagesRepo.send(
+        chatId: widget.chatId,
+        content: 'Voice message...',
+        messageType: MessageType.audio,
+      );
+
+      final file = XFile(path);
+      final bytes = await file.readAsBytes();
+      final attachment = await attachmentsRepo.upload(
+        bytes: bytes,
+        fileName: 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a',
+        messageId: message.id,
+      );
+
+      if (!mounted) return;
+      context.read<ChatBloc>().add(ChatEdit(
+            messageId: message.id,
+            content: attachment.url,
+          ));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка отправки голосового: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
   }
 
   Future<void> _sendXFile(XFile xfile, MessageType type) async {
@@ -206,6 +345,7 @@ class _ChatViewState extends State<_ChatView> {
 
   void _showMessageMenu(BuildContext context, Message m) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -226,14 +366,14 @@ class _ChatViewState extends State<_ChatView> {
             ),
             ListTile(
               leading: const Icon(Icons.edit_rounded),
-              title: const Text('Редактировать'),
+              title: Text(l10n.editMessage),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               onTap: () async {
                 Navigator.of(context).pop();
                 final result = await _askEdit(context, m.content);
-                if (result != null) {
+                if (result != null && mounted) {
                   context
                       .read<ChatBloc>()
                       .add(ChatEdit(messageId: m.id, content: result));
@@ -242,7 +382,7 @@ class _ChatViewState extends State<_ChatView> {
             ),
             ListTile(
               leading: const Icon(Icons.emoji_emotions_outlined),
-              title: const Text('Поставить реакцию'),
+              title: Text(l10n.addReaction),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -255,13 +395,13 @@ class _ChatViewState extends State<_ChatView> {
                         .add(messageId: m.id, emoji: emoji);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Реакция $emoji добавлена')),
+                        SnackBar(content: Text('$emoji ${l10n.addReaction}')),
                       );
                     }
                   } on Object catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Ошибка: $e')),
+                        SnackBar(content: Text('${l10n.errorLoading}: $e')),
                       );
                     }
                   }
@@ -270,7 +410,7 @@ class _ChatViewState extends State<_ChatView> {
             ),
             ListTile(
               leading: Icon(Icons.delete_outline_rounded, color: scheme.error),
-              title: Text('Удалить', style: TextStyle(color: scheme.error)),
+              title: Text(l10n.deleteMessage, style: TextStyle(color: scheme.error)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -287,28 +427,29 @@ class _ChatViewState extends State<_ChatView> {
   }
 
   Future<String?> _askEdit(BuildContext context, String current) async {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController(text: current);
     return showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Редактировать сообщение'),
+        title: Text(l10n.editMessage),
         content: TextField(
           controller: controller,
           autofocus: true,
           maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'Введите текст',
+          decoration: InputDecoration(
+            hintText: l10n.messageHint,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Отмена'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () =>
                 Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Сохранить'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -348,7 +489,7 @@ class _ChatViewState extends State<_ChatView> {
         ),
         title: Text(
           'Чат #${widget.chatId}',
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -544,7 +685,7 @@ class _MessageBubble extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 12, bottom: 4),
                   child: Text(
                     message.senderUsername,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: scheme.primary,
@@ -614,11 +755,13 @@ class _MessageBubble extends StatelessWidget {
                           ),
                         ),
                       ),
-                    if (message.messageType == MessageType.text ||
-                        message.content.isEmpty)
+                    if (message.content.isEmpty ||
+                        message.messageType == MessageType.text ||
+                        (message.messageType != MessageType.image &&
+                            message.messageType != MessageType.video))
                       Text(
                         message.isDeleted ? 'Удалено' : message.content,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: onColor,
                           fontSize: TextSizeProvider.instance.textSize.toDouble(),
                           fontStyle: message.isDeleted
@@ -632,7 +775,7 @@ class _MessageBubble extends StatelessWidget {
                       children: [
                         Text(
                           DateFormat.Hm().format(message.createdAt.toLocal()),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(
                             color: onColor.withOpacity(0.6),
                             fontSize: 11,
                           ),
@@ -653,7 +796,7 @@ class _MessageBubble extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             'ред.',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               color: onColor.withOpacity(0.6),
                               fontSize: 11,
                             ),
@@ -716,6 +859,7 @@ class _ComposerState extends State<_Composer> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -735,7 +879,7 @@ class _ComposerState extends State<_Composer> {
           children: [
             // Attach button
             IconButton(
-              tooltip: 'Прикрепить файл',
+              tooltip: l10n.attachFile,
               icon: widget.isUploading
                   ? SizedBox(
                       width: 24,
@@ -775,7 +919,7 @@ class _ComposerState extends State<_Composer> {
                               ListTile(
                                 leading: Icon(Icons.photo_library_rounded,
                                     color: scheme.primary),
-                                title: const Text('Фото'),
+                                title: Text(l10n.photo),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -787,7 +931,7 @@ class _ComposerState extends State<_Composer> {
                               ListTile(
                                 leading: Icon(Icons.video_library_rounded,
                                     color: scheme.primary),
-                                title: const Text('Видео'),
+                                title: Text(l10n.video),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -799,7 +943,7 @@ class _ComposerState extends State<_Composer> {
                               ListTile(
                                 leading: Icon(Icons.mic_rounded,
                                     color: scheme.primary),
-                                title: const Text('Голосовое сообщение'),
+                                title: Text(l10n.voiceMessage),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -825,10 +969,10 @@ class _ComposerState extends State<_Composer> {
                 minLines: 1,
                 maxLines: 5,
                 textInputAction: TextInputAction.send,
-                style: GoogleFonts.inter(fontSize: 15),
+                style: TextStyle(fontSize: 15),
                 decoration: InputDecoration(
                   hintText: 'Сообщение...',
-                  hintStyle: GoogleFonts.inter(
+                  hintStyle: TextStyle(
                     color: scheme.onSurfaceVariant.withOpacity(0.5),
                   ),
                   filled: true,

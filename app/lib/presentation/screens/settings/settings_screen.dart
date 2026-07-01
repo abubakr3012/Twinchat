@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+import '../../../core/utils/locale_provider.dart';
 import '../../../core/utils/text_size_provider.dart';
 import '../../../core/utils/theme_mode_provider.dart';
 import '../../../domain/repositories/auth_repository.dart';
@@ -27,21 +29,29 @@ class _SettingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Настройки'),
+        title: Text(l10n.settings),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/chats'),
         ),
       ),
       body: BlocConsumer<SettingsBloc, SettingsState>(
-        listenWhen: (a, b) => b is SettingsReady && b.error != null,
+        listenWhen: (a, b) => b is SettingsReady,
         listener: (context, state) {
-          if (state is SettingsReady && state.error != null) {
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(content: Text(state.error!)));
+          if (state is SettingsReady) {
+            if (state.error != null) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(content: Text(state.error!)));
+            }
+            // Sync providers in listener (not build) to avoid rebuild loops
+            TextSizeProvider.instance.textSize = state.chat.textSize;
+            ThemeModeProvider.instance.setFromSettings(state.chat.theme);
+            LocaleProvider.instance.setFromSettings(state.language.language);
           }
         },
         builder: (context, state) {
@@ -49,27 +59,24 @@ class _SettingsView extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           final ready = state as SettingsReady;
-          // Sync textSize to global provider
-          TextSizeProvider.instance.textSize = ready.chat.textSize;
-          // Sync theme to global provider
-          ThemeModeProvider.instance.setFromSettings(ready.chat.theme);
           return ListView(
             children: [
-              const _SectionTitle('Чат'),
+              // ─── Chat Section ──────────────────────────────────────
+              _SectionTitle(l10n.chats),
               ListTile(
-                title: const Text('Тема'),
-                subtitle: Text(_themeLabel(ready.chat.theme)),
+                title: Text(l10n.theme),
+                subtitle: Text(_themeLabel(ready.chat.theme, l10n)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () async {
                   final choice = await showDialog<String>(
                     context: context,
                     builder: (_) => SimpleDialog(
-                      title: const Text('Тема'),
+                      title: Text(l10n.theme),
                       children: [
                         for (final v in const ['light', 'dark', 'system'])
                           SimpleDialogOption(
                             onPressed: () => Navigator.of(context).pop(v),
-                            child: Text(_themeLabel(v)),
+                            child: Text(_themeLabel(v, l10n)),
                           ),
                       ],
                     ),
@@ -82,7 +89,7 @@ class _SettingsView extends StatelessWidget {
                 },
               ),
               ListTile(
-                title: const Text('Размер текста'),
+                title: Text(l10n.textSize),
                 subtitle: Text('${ready.chat.textSize}'),
                 trailing: SizedBox(
                   width: 160,
@@ -101,7 +108,7 @@ class _SettingsView extends StatelessWidget {
                 ),
               ),
               SwitchListTile(
-                title: const Text('Уведомления'),
+                title: Text(l10n.notifications),
                 value: ready.chat.notifications,
                 onChanged: (v) =>
                     context.read<SettingsBloc>().add(SettingsUpdateChat(
@@ -109,33 +116,38 @@ class _SettingsView extends StatelessWidget {
                         )),
               ),
               const Divider(),
-              const _SectionTitle('Приватность'),
+
+              // ─── Privacy Section ───────────────────────────────────
+              _SectionTitle(l10n.privacy),
               _VisibilityTile(
-                label: 'Кто видит номер телефона',
+                label: l10n.seePhoneNumber,
                 value: ready.privacy.seePhoneNumber,
+                l10n: l10n,
                 onChanged: (v) =>
                     context.read<SettingsBloc>().add(SettingsUpdatePrivacy(
                           ready.privacy.copyWith(seePhoneNumber: v),
                         )),
               ),
               _VisibilityTile(
-                label: 'Кто видит фото профиля',
+                label: l10n.seeProfilePhoto,
                 value: ready.privacy.seeProfilePhoto,
+                l10n: l10n,
                 onChanged: (v) =>
                     context.read<SettingsBloc>().add(SettingsUpdatePrivacy(
                           ready.privacy.copyWith(seeProfilePhoto: v),
                         )),
               ),
               _VisibilityTile(
-                label: 'Кто видит «был в сети»',
+                label: l10n.seeLastSeen,
                 value: ready.privacy.seeLastSeen,
+                l10n: l10n,
                 onChanged: (v) =>
                     context.read<SettingsBloc>().add(SettingsUpdatePrivacy(
                           ready.privacy.copyWith(seeLastSeen: v),
                         )),
               ),
               SwitchListTile(
-                title: const Text('Автоудаление сообщений'),
+                title: Text(l10n.autoDeleteMessages),
                 value: ready.privacy.autoDeleteMessages,
                 onChanged: (v) =>
                     context.read<SettingsBloc>().add(SettingsUpdatePrivacy(
@@ -143,11 +155,11 @@ class _SettingsView extends StatelessWidget {
                         )),
               ),
               ListTile(
-                title: const Text('Срок хранения (дней)'),
+                title: Text(l10n.storageDays),
                 subtitle: Text('${ready.privacy.messageTtlDays}'),
               ),
               SwitchListTile(
-                title: const Text('Двухфакторная аутентификация'),
+                title: Text(l10n.twoFactorAuth),
                 value: ready.privacy.twoFactorAuth,
                 onChanged: (v) =>
                     context.read<SettingsBloc>().add(SettingsUpdatePrivacy(
@@ -155,21 +167,23 @@ class _SettingsView extends StatelessWidget {
                         )),
               ),
               const Divider(),
-              const _SectionTitle('Язык'),
+
+              // ─── Language Section ──────────────────────────────────
+              _SectionTitle(l10n.language),
               ListTile(
-                title: const Text('Язык интерфейса'),
-                subtitle: Text(ready.language.language),
+                title: Text(l10n.language),
+                subtitle: Text(_langLabel(ready.language.language, l10n)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () async {
                   final lang = await showDialog<String>(
                     context: context,
                     builder: (_) => SimpleDialog(
-                      title: const Text('Язык'),
+                      title: Text(l10n.language),
                       children: [
-                        for (final l in const ['ru', 'en', 'uz'])
+                        for (final l in const ['ru', 'en', 'tg'])
                           SimpleDialogOption(
                             onPressed: () => Navigator.of(context).pop(l),
-                            child: Text(l),
+                            child: Text(_langLabel(l, l10n)),
                           ),
                       ],
                     ),
@@ -178,11 +192,13 @@ class _SettingsView extends StatelessWidget {
                     context.read<SettingsBloc>().add(SettingsUpdateLanguage(
                           ready.language.copyWith(language: lang),
                         ));
+                    // Apply locale change immediately
+                    LocaleProvider.instance.setFromSettings(lang);
                   }
                 },
               ),
               SwitchListTile(
-                title: const Text('Автоперевод входящих'),
+                title: Text(l10n.autoTranslate),
                 value: ready.language.autoTranslate,
                 onChanged: (v) =>
                     context.read<SettingsBloc>().add(SettingsUpdateLanguage(
@@ -190,23 +206,25 @@ class _SettingsView extends StatelessWidget {
                         )),
               ),
               const Divider(),
+
+              // ─── Links ─────────────────────────────────────────────
               ListTile(
                 leading: const Icon(Icons.shield_outlined),
-                title: const Text('Safe Mode'),
-                subtitle: const Text('Шифрование сообщений и медиа'),
+                title: Text(l10n.safeMode),
+                subtitle: const Text('E2E encryption'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.go('/safe-mode'),
               ),
               ListTile(
                 leading: const Icon(Icons.person_outline),
-                title: const Text('Мой профиль'),
+                title: Text(l10n.myProfile),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => context.go('/my-profile'),
               ),
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text('Выйти', style: TextStyle(color: Colors.red)),
+                title: Text(l10n.logout, style: const TextStyle(color: Colors.red)),
                 onTap: () async {
                   await GetIt.I<AuthRepository>().logout();
                   if (!context.mounted) return;
@@ -220,15 +238,28 @@ class _SettingsView extends StatelessWidget {
     );
   }
 
-  static String _themeLabel(String v) {
+  String _themeLabel(String v, AppLocalizations l10n) {
     switch (v) {
       case 'light':
-        return 'Светлая';
+        return l10n.lightTheme;
       case 'dark':
-        return 'Тёмная';
+        return l10n.darkTheme;
       case 'system':
       default:
-        return 'Как в системе';
+        return l10n.systemTheme;
+    }
+  }
+
+  String _langLabel(String v, AppLocalizations l10n) {
+    switch (v) {
+      case 'ru':
+        return 'Русский';
+      case 'en':
+        return 'English';
+      case 'tg':
+        return 'Тоҷикӣ';
+      default:
+        return v;
     }
   }
 }
@@ -255,21 +286,23 @@ class _VisibilityTile extends StatelessWidget {
   const _VisibilityTile({
     required this.label,
     required this.value,
+    required this.l10n,
     required this.onChanged,
   });
   final String label;
   final String value;
+  final AppLocalizations l10n;
   final ValueChanged<String> onChanged;
 
   String _label(String v) {
     switch (v) {
       case 'everyone':
-        return 'Все';
+        return l10n.everyone;
       case 'nobody':
-        return 'Никто';
+        return l10n.nobody;
       case 'contacts':
       default:
-        return 'Контакты';
+        return l10n.contactsOnly;
     }
   }
 

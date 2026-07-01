@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Аватар пользователя / чата с градиентом и инициалами.
 class UserAvatar extends StatelessWidget {
@@ -66,7 +65,7 @@ class UserAvatar extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         _initials,
-        style: GoogleFonts.inter(
+        style: TextStyle(
           color: Colors.white,
           fontSize: size * 0.38,
           fontWeight: FontWeight.w700,

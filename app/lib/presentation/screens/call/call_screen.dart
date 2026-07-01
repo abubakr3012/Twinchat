@@ -40,6 +40,7 @@ class _CallScreenState extends State<CallScreen> {
         chatId: widget.chatId,
         type: widget.callType,
       );
+      if (!mounted) return;
       setState(() {
         _call = call;
         _loading = false;
@@ -48,6 +49,7 @@ class _CallScreenState extends State<CallScreen> {
         if (mounted) setState(() => _seconds++);
       });
     } on Object catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = '$e';
         _loading = false;

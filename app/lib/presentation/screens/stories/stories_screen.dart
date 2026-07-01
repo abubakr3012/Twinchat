@@ -7,6 +7,7 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../domain/entities/story.dart';
 import '../../../domain/repositories/stories_repository.dart';
 import '../../blocs/stories/stories_bloc.dart';
@@ -42,9 +43,10 @@ class _StoriesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Истории'),
+        title: Text(l10n.stories),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/chats'),
@@ -74,9 +76,9 @@ class _StoriesView extends StatelessWidget {
                   .read<StoriesBloc>()
                   .add(const StoriesLoad()),
               child: ListView(
-                children: const [
-                  SizedBox(height: 80),
-                  Center(child: Text('Историй пока нет. Нажмите + чтобы добавить.')),
+                children: [
+                  const SizedBox(height: 80),
+                  Center(child: Text(l10n.noStoriesHint)),
                 ],
               ),
             );
@@ -126,8 +128,8 @@ class _StoriesView extends StatelessWidget {
                       ),
                       title: Text(s.caption?.isNotEmpty == true
                           ? s.caption!
-                          : 'История #${s.id}'),
-                      subtitle: Text('Просмотров: ${s.viewsCount}'),
+                          : '${l10n.storyNumber} #${s.id}'),
+                      subtitle: Text('${s.viewsCount} ${l10n.viewsCount}'),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline),
                         onPressed: () => context
@@ -238,7 +240,7 @@ class StoryViewerScreen extends StatelessWidget {
                         style: const TextStyle(color: Colors.white)),
                     const SizedBox(width: 8),
                     Text(
-                      '${story.viewsCount} просмотров',
+                      '${story.viewsCount} ${AppLocalizations.of(context).viewsCount}',
                       style: const TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ],

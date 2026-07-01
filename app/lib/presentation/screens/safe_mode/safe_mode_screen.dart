@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../domain/repositories/encryption_repository.dart';
 import '../../blocs/safe_mode/safe_mode_bloc.dart';
 
@@ -29,6 +30,7 @@ class _SafeModeView extends StatefulWidget {
 class _SafeModeViewState extends State<_SafeModeView> {
   final _keyController = TextEditingController();
   final _autoLockController = TextEditingController();
+  bool _autoLockFilled = false;
 
   @override
   void dispose() {
@@ -64,7 +66,10 @@ class _SafeModeViewState extends State<_SafeModeView> {
             return const Center(child: CircularProgressIndicator());
           }
           final ready = state as SafeModeReady;
-          _autoLockController.text = ready.ui.autoLockMinutes.toString();
+          if (!_autoLockFilled) {
+            _autoLockController.text = ready.ui.autoLockMinutes.toString();
+            _autoLockFilled = true;
+          }
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -170,30 +175,31 @@ class _SafeModeViewState extends State<_SafeModeView> {
   }
 
   void _showEnableDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final keyCtl = TextEditingController();
     showDialog<void>(
       context: context,
       builder: (dctx) {
         return AlertDialog(
-          title: const Text('Включить Safe Mode'),
+          title: Text(l10n.enableSafeMode),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Создайте ключ (любая строка). Сервер сохранит только его fingerprint.',
+              Text(
+                l10n.enterKeyToUnlock,
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: keyCtl,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Ключ'),
+                decoration: InputDecoration(labelText: l10n.keyFingerprint),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dctx).pop(),
-              child: const Text('Отмена'),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: () {
@@ -206,7 +212,7 @@ class _SafeModeViewState extends State<_SafeModeView> {
                     ));
                 Navigator.of(dctx).pop();
               },
-              child: const Text('Включить'),
+              child: Text(l10n.enableSafeMode),
             ),
           ],
         );

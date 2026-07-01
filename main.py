@@ -2,264 +2,178 @@ import os
 import subprocess
 import sys
 import time
-
-
-PROJECT_NAME = "twinchat"
-
-GUNICORN_NAME = "twinchat-engine"
-NGINX_NAME = "twinchat-gateway"
-
-BASE_DIR = "/var/www/twinchat"
+import shutil
 
 
 class DeployError(Exception):
-    """Кастомное исключение для ошибок деплоя."""
     pass
 
 
-def execute(command):
-
-    print("\n")
-    print("=" * 60)
-    print(command)
-    print("=" * 60)
+def execute(command, cwd=None):
+    print(f"\n{'=' * 60}")
+    print(f"  $ {command}")
+    print(f"{'=' * 60}")
 
     try:
-        subprocess.run(
+        result = subprocess.run(
             command,
             shell=True,
             check=True,
+            cwd=cwd,
+            text=True,
         )
-
+        return result
     except subprocess.CalledProcessError as e:
         raise DeployError(
-            f"Команда завершилась с ошибкой (код {e.returncode}): {command}"
+            f"Command failed (code {e.returncode}): {command}"
         ) from e
-
     except FileNotFoundError as e:
         raise DeployError(
-            f"Команда/интерпретатор не найден: {command}"
+            f"Command not found: {command}"
         ) from e
 
 
 def banner():
-
     print(
-        """
-=================================
+        r"""
+  _____ _____ ____  __  __ ____  _     ___   ____
+ |_   _| ____|  _ \|  \/  | __ )| |   / _ \ / ___|
+   | | |  _| | |_) | |\/| |  _ \| |  | | | | |  _
+   | | | |___|  _ <| |  | | |_) | |__| |_| | |_| |
+   |_| |_____|_| \_\_|  |_|____/|_____\___/ \____|
 
-        TWINCHAT DEPLOYER
-
-        Engine:
-        twinchat-engine
-
-        Gateway:
-        twinchat-gateway
-
-=================================
+        PRODUCTION DEPLOYER v2.0
+        Docker + Nginx + PostgreSQL + Redis
 """
     )
 
 
-def install_packages():
+def check_docker():
+    if shutil.which("docker") is None:
+        raise DeployError("Docker is not installed or not in PATH")
 
-    execute("apt update")
+    if shutil.which("docker") is None or "compose" not in subprocess.run(
+        "docker compose version", shell=True, capture_output=True, text=True
+    ).stdout.lower():
+        raise DeployError("Docker Compose is not available")
 
-    execute(
-        """
-apt install -y \
-docker.io \
-docker-compose \
-nginx \
-python3-pip \
-python3-venv \
-certbot \
-python3-certbot-nginx
+    print("[OK] Docker and Docker Compose are available")
+
+
+def check_env_file():
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    example_path = os.path.join(os.path.dirname(__file__), ".env.example")
+
+    if not os.path.exists(env_path):
+        if os.path.exists(example_path):
+            shutil.copy2(example_path, env_path)
+            print("[INFO] Created .env from .env.example")
+            print("[WARN] Edit .env with your production values before going live!")
+        else:
+            raise DeployError(".env file not found and .env.example missing")
+
+
+def build_and_start():
+    print("\n--- Building and starting containers ---")
+    execute("docker compose down --remove-orphans")
+    execute("docker compose build --no-cache")
+    execute("docker compose up -d")
+
+
+def wait_for_services():
+    print("\n--- Waiting for services to be ready ---")
+    max_attempts = 30
+    for i in range(max_attempts):
+        result = subprocess.run(
+            "docker compose ps --format json",
+            shell=True,
+            capture_output=True,
+            text=True,
+            cwd=os.path.dirname(__file__),
+        )
+        output = result.stdout
+        if '"running"' in output or '"Up"' in output:
+            print("[OK] Containers are running")
+            break
+        print(f"  Waiting... ({i + 1}/{max_attempts})")
+        time.sleep(2)
+    else:
+        print("[WARN] Some containers may not be fully ready yet")
+
+    print("  Waiting 10s for database initialization...")
+    time.sleep(10)
+
+
+def django_migrate():
+    print("\n--- Running Django migrations ---")
+    execute("docker compose exec -T backend python manage.py migrate --noinput")
+
+
+def django_collectstatic():
+    print("\n--- Collecting static files ---")
+    execute("docker compose exec -T backend python manage.py collectstatic --noinput")
+
+
+def show_status():
+    print("\n--- Container status ---")
+    execute("docker compose ps")
+
+
+def print_success():
+    print(
+        r"""
+============================================
+  TwinChat deployed successfully!
+============================================
+
+  Services:
+    - PostgreSQL    : localhost:5432
+    - Redis         : localhost:6379
+    - Django API    : localhost (via Nginx)
+    - WebSocket     : ws://localhost/ws/
+    - Nginx         : localhost:80
+    - Static files  : served by Nginx
+
+  Commands:
+    - docker compose ps          : check status
+    - docker compose logs -f     : view logs
+    - docker compose down        : stop all
+    - docker compose restart     : restart all
+
+============================================
 """
     )
-
-
-def create_directories():
-
-    try:
-        os.makedirs(BASE_DIR, exist_ok=True)
-        os.makedirs("/etc/systemd/system", exist_ok=True)
-        os.makedirs("/etc/nginx/sites-available", exist_ok=True)
-
-    except OSError as e:
-        raise DeployError(f"Не удалось создать директории: {e}") from e
-
-
-def start_docker():
-
-    print("Starting TwinChat containers...")
-
-    execute("docker compose down")
-    execute("docker compose up -d --build")
-
-
-def django_prepare():
-
-    print("Preparing Django...")
-
-    time.sleep(15)
-
-    execute(
-        """
-docker exec twinchat-backend \
-python manage.py makemigrations
-"""
-    )
-
-    execute(
-        """
-docker exec twinchat-backend \
-python manage.py migrate
-"""
-    )
-
-    execute(
-        """
-docker exec twinchat-backend \
-python manage.py collectstatic --noinput
-"""
-    )
-
-
-def create_gunicorn_service():
-
-    service = f"""
-[Unit]
-Description={GUNICORN_NAME}
-After=network.target
-
-[Service]
-User=root
-WorkingDirectory={BASE_DIR}
-ExecStart={BASE_DIR}/venv/bin/gunicorn \
-config.wsgi:application \
---name {GUNICORN_NAME} \
---workers 4 \
---bind unix:/run/{GUNICORN_NAME}.sock
-
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-"""
-
-    try:
-        with open("/etc/systemd/system/twinchat.service", "w") as file:
-            file.write(service)
-
-    except OSError as e:
-        raise DeployError(
-            f"Не удалось записать systemd unit-файл: {e}"
-        ) from e
-
-    execute("systemctl daemon-reload")
-    execute("systemctl enable twinchat")
-
-
-def create_nginx():
-
-    nginx = f"""
-server {{
-    listen 80;
-    server_name _;
-
-    location / {{
-        proxy_pass http://unix:/run/{GUNICORN_NAME}.sock;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }}
-
-    location /static/ {{
-        alias {BASE_DIR}/static/;
-    }}
-}}
-"""
-
-    path = f"/etc/nginx/sites-available/{NGINX_NAME}.conf"
-
-    try:
-        with open(path, "w") as file:
-            file.write(nginx)
-
-    except OSError as e:
-        raise DeployError(
-            f"Не удалось записать конфиг nginx: {e}"
-        ) from e
-
-    execute(
-        f"ln -sf {path} /etc/nginx/sites-enabled/{NGINX_NAME}.conf"
-    )
-
-    execute("nginx -t")
-    execute("systemctl restart nginx")
-
-
-def start_services():
-
-    execute("systemctl restart twinchat")
-    execute("systemctl restart nginx")
 
 
 def deploy():
-
     banner()
 
     steps = [
-        ("Установка пакетов", install_packages),
-        ("Создание директорий", create_directories),
-        ("Запуск Docker-контейнеров", start_docker),
-        ("Подготовка Django", django_prepare),
-        ("Создание systemd-сервиса Gunicorn", create_gunicorn_service),
-        ("Создание конфигурации Nginx", create_nginx),
-        ("Запуск сервисов", start_services),
+        ("Checking Docker", check_docker),
+        ("Checking .env file", check_env_file),
+        ("Building and starting containers", build_and_start),
+        ("Waiting for services", wait_for_services),
+        ("Running Django migrations", django_migrate),
+        ("Collecting static files", django_collectstatic),
+        ("Showing status", show_status),
     ]
 
     for step_name, step_func in steps:
         try:
             step_func()
-
         except DeployError as e:
-            print(f"\nОШИБКА на шаге «{step_name}»: {e}")
+            print(f"\n  ERROR at '{step_name}': {e}")
             sys.exit(1)
-
         except Exception as e:
-            print(
-                f"\nНЕОЖИДАННАЯ ОШИБКА на шаге «{step_name}»: {e}"
-            )
+            print(f"\n  UNEXPECTED ERROR at '{step_name}': {e}")
             sys.exit(1)
 
-    print(
-        """
-
-=================================
-
- TwinChat успешно запущен 🚀
-
- Gunicorn:
- twinchat-engine
-
- Nginx:
- twinchat-gateway
-
- Docker:
- twinchat containers
-
-=================================
-
-"""
-    )
+    print_success()
 
 
 if __name__ == "__main__":
-
     try:
         deploy()
-
     except KeyboardInterrupt:
-        print("\nДеплой прерван пользователем.")
+        print("\nDeployment cancelled by user.")
         sys.exit(130)

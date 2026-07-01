@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Поле ввода сообщения с кнопками прикрепления и отправки.
 class MessageInput extends StatefulWidget {
@@ -88,10 +87,10 @@ class _MessageInputState extends State<MessageInput> {
                 minLines: 1,
                 maxLines: 5,
                 textInputAction: TextInputAction.send,
-                style: GoogleFonts.inter(fontSize: 15),
+                style: TextStyle(fontSize: 15),
                 decoration: InputDecoration(
                   hintText: widget.hintText ?? 'Сообщение...',
-                  hintStyle: GoogleFonts.inter(
+                  hintStyle: TextStyle(
                     color: scheme.onSurfaceVariant.withOpacity(0.5),
                   ),
                   filled: true,

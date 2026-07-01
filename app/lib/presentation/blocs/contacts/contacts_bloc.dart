@@ -46,6 +46,14 @@ class ContactsBlock extends ContactsEvent {
   List<Object?> get props => [contactId];
 }
 
+class ContactsSyncDeviceContact extends ContactsEvent {
+  const ContactsSyncDeviceContact({required this.name, required this.phone});
+  final String name;
+  final String phone;
+  @override
+  List<Object?> get props => [name, phone];
+}
+
 sealed class ContactsState extends Equatable {
   const ContactsState();
   @override
@@ -104,6 +112,7 @@ class ContactsBloc extends Bloc<ContactsEvent, ContactsState> {
     on<ContactsAdd>(_onAdd);
     on<ContactsDelete>(_onDelete);
     on<ContactsBlock>(_onBlock);
+    on<ContactsSyncDeviceContact>(_onSyncDeviceContact);
   }
 
   final ContactsRepository _contacts;
@@ -202,6 +211,26 @@ class ContactsBloc extends Bloc<ContactsEvent, ContactsState> {
         emit((state as ContactsReady)
             .copyWith(error: extractErrorMessage(e)));
       }
+    }
+  }
+
+  Future<void> _onSyncDeviceContact(
+    ContactsSyncDeviceContact event,
+    Emitter<ContactsState> emit,
+  ) async {
+    try {
+      // Search for user by phone number
+      final users = await _users.search(event.phone);
+      if (users.isNotEmpty) {
+        // If user found, add to contacts
+        await _contacts.add(
+          contactId: users.first.id,
+          nickname: event.name,
+        );
+      }
+    } catch (e) {
+      // Silently fail for individual contact sync errors
+      // to avoid spamming user with error messages
     }
   }
 }

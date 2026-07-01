@@ -123,6 +123,11 @@ class RefreshTokenInterceptor extends Interceptor {
         _failAll(null);
         return null;
       }
+    } on Object catch (_) {
+      // Catch non-Dio exceptions (SocketException, FormatException, etc.)
+      // to prevent orphaned waiters hanging forever.
+      _failAll(null);
+      return null;
     } finally {
       _refreshing = false;
     }

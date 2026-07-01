@@ -30,11 +30,15 @@ class SplashCubit extends Cubit<void> {
     if (isClosed) return;
     final ctx = _navigatorKey.currentContext;
     if (ctx == null || !ctx.mounted) return;
-    final router = GoRouter.of(ctx);
-    if (loggedIn) {
-      router.go('/chats');
-    } else {
-      router.go('/login');
+    try {
+      final router = GoRouter.of(ctx);
+      if (loggedIn) {
+        router.go('/chats');
+      } else {
+        router.go('/login');
+      }
+    } catch (_) {
+      // Router may not be ready yet
     }
   }
 }

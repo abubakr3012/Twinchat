@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/api/api_constants.dart';
 import '../core/api/dio_client.dart';
 import '../core/crypto/key_manager.dart';
+import '../core/database/database_helper.dart';
 import '../core/storage/token_storage.dart';
 import '../data/datasources/attachments_remote.dart';
 import '../data/datasources/auth_remote.dart';
@@ -55,6 +56,7 @@ Future<void> configureDependencies() async {
 
   final prefs = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(prefs);
+  getIt.registerSingleton<DatabaseHelper>(DatabaseHelper.instance);
 
   // --- Сеть ---
   final tokenStorage = getIt<TokenStorage>();
@@ -110,10 +112,10 @@ Future<void> configureDependencies() async {
     AuthRepositoryImpl(remote: authRemote, tokenStorage: getIt<TokenStorage>()),
   );
   getIt.registerSingleton<ChatsRepository>(
-    ChatsRepositoryImpl(chatsRemote),
+    ChatsRepositoryImpl(chatsRemote, database: getIt<DatabaseHelper>()),
   );
   getIt.registerSingleton<MessagesRepository>(
-    MessagesRepositoryImpl(messagesRemote),
+    MessagesRepositoryImpl(messagesRemote, database: getIt<DatabaseHelper>()),
   );
   getIt.registerSingleton<UsersRepository>(
     UsersRepositoryImpl(usersRemote),

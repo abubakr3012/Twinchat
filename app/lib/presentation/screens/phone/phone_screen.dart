@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
@@ -41,12 +41,12 @@ class _PhoneViewState extends State<_PhoneView> {
     super.dispose();
   }
 
-  String? _validate(String? value) {
+  String? _validate(String? value, AppLocalizations l10n) {
     final v = (value ?? '').trim();
-    if (v.isEmpty) return 'Введите номер телефона';
+    if (v.isEmpty) return l10n.invalidPhone;
     final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.length < 7) return 'Слишком короткий номер';
-    if (digits.length > 15) return 'Слишком длинный номер';
+    if (digits.length < 7) return l10n.invalidPhone;
+    if (digits.length > 15) return l10n.invalidPhone;
     return null;
   }
 
@@ -60,6 +60,7 @@ class _PhoneViewState extends State<_PhoneView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       body: SafeArea(
@@ -130,14 +131,14 @@ class _PhoneViewState extends State<_PhoneView> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'Вход по SMS',
+                          l10n.enterPhone,
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Мы отправим SMS с кодом подтверждения на ваш номер',
+                          l10n.codeSentTo,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: scheme.onSurfaceVariant,
                           ),
@@ -165,18 +166,18 @@ class _PhoneViewState extends State<_PhoneView> {
                               ),
                             ],
                             decoration: InputDecoration(
-                              labelText: 'Номер телефона',
-                              hintText: '+998 90 123 45 67',
+                              labelText: l10n.phone,
+                              hintText: l10n.phoneHint,
                               prefixIcon:
                                   const Icon(Icons.phone_outlined, size: 22),
                               prefixText: '+',
-                              prefixStyle: GoogleFonts.inter(
+                              prefixStyle: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: scheme.onSurface,
                               ),
                             ),
-                            validator: _validate,
+                            validator: (v) => _validate(v, l10n),
                             enabled: !isLoading,
                             onFieldSubmitted: (_) => _submit(context),
                           ),
@@ -203,8 +204,8 @@ class _PhoneViewState extends State<_PhoneView> {
                                       size: 20,
                                     ),
                               label: Text(
-                                isLoading ? 'Отправка...' : 'Получить код',
-                                style: GoogleFonts.inter(
+                                isLoading ? l10n.loading : l10n.getCode,
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -222,8 +223,8 @@ class _PhoneViewState extends State<_PhoneView> {
                               color: scheme.primary,
                             ),
                             label: Text(
-                              'Войти по логину и паролю',
-                              style: GoogleFonts.inter(
+                              l10n.loginWithPassword,
+                              style: TextStyle(
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

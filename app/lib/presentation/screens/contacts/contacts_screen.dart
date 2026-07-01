@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../domain/entities/contact.dart';
 import '../../../domain/entities/user.dart';
 import '../../../domain/repositories/contacts_repository.dart';
@@ -33,6 +36,69 @@ class _ContactsView extends StatefulWidget {
 
 class _ContactsViewState extends State<_ContactsView> {
   final _searchController = TextEditingController();
+  bool _hasPermission = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermission();
+  }
+
+  Future<void> _checkPermission() async {
+    final status = await Permission.contacts.status;
+    if (!mounted) return;
+    setState(() => _hasPermission = status.isGranted);
+  }
+
+  Future<void> _requestPermission() async {
+    final status = await Permission.contacts.request();
+    if (!mounted) return;
+    setState(() => _hasPermission = status.isGranted);
+    if (status.isGranted) {
+      _syncDeviceContacts();
+    }
+  }
+
+  Future<void> _syncDeviceContacts() async {
+    if (!_hasPermission) return;
+    
+    try {
+      final contacts = await fc.FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: false,
+      );
+      
+      // Filter contacts with phone numbers
+      final phoneContacts = contacts.where((c) => 
+        c.phones.isNotEmpty && c.phones.first.number.isNotEmpty
+      ).toList();
+      
+      // Sync with backend
+      final bloc = context.read<ContactsBloc>();
+      for (final contact in phoneContacts) {
+        final phone = contact.phones.first.number
+            .replaceAll(RegExp(r'[^\d+]'), '');
+        bloc.add(ContactsSyncDeviceContact(
+          name: contact.displayName,
+          phone: phone,
+        ));
+      }
+      
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${l10n.contactsSyncedCount}: ${phoneContacts.length}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${l10n.syncError}: $e')),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -40,28 +106,29 @@ class _ContactsViewState extends State<_ContactsView> {
     super.dispose();
   }
 
-  void _showAddContact(BuildContext context, User user) async {
+  Future<void> _showAddContact(BuildContext context, User user) async {
+    final l10n = AppLocalizations.of(context);
     final nickname = await showDialog<String>(
       context: context,
       builder: (_) {
         final controller = TextEditingController();
         return AlertDialog(
-          title: Text('Добавить ${user.username}'),
+          title: Text('${l10n.addContact} ${user.username}'),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'Никнейм (опционально)',
+            decoration: InputDecoration(
+              labelText: l10n.nicknameOptional,
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(null),
-              child: const Text('Отмена'),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: () =>
                   Navigator.of(context).pop(controller.text.trim()),
-              child: const Text('Добавить'),
+              child: Text(l10n.addContact),
             ),
           ],
         );
@@ -75,13 +142,28 @@ class _ContactsViewState extends State<_ContactsView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Контакты'),
+        title: Text(l10n.contacts),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/chats'),
+          onPressed: () => context.pop(),
         ),
+        actions: [
+          if (!_hasPermission)
+            IconButton(
+              icon: const Icon(Icons.sync),
+              onPressed: _requestPermission,
+              tooltip: l10n.syncContacts,
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _syncDeviceContacts,
+              tooltip: l10n.syncContacts,
+            ),
+        ],
       ),
       body: BlocConsumer<ContactsBloc, ContactsState>(
         listenWhen: (a, b) => b is ContactsReady && b.error != null,
@@ -103,9 +185,9 @@ class _ContactsViewState extends State<_ContactsView> {
                 padding: const EdgeInsets.all(12),
                 child: TextField(
                   controller: _searchController,
-                  decoration: const InputDecoration(
-                    hintText: 'Поиск по username',
-                    prefixIcon: Icon(Icons.search),
+                  decoration: InputDecoration(
+                    hintText: l10n.searchByUsername,
+                    prefixIcon: const Icon(Icons.search),
                   ),
                   onChanged: (v) => context
                       .read<ContactsBloc>()
@@ -119,7 +201,7 @@ class _ContactsViewState extends State<_ContactsView> {
                 ),
               Expanded(
                 child: ready.contacts.isEmpty
-                    ? const Center(child: Text('Контактов пока нет'))
+                    ? Center(child: Text(l10n.noContacts))
                     : RefreshIndicator(
                         onRefresh: () async => context
                             .read<ContactsBloc>()
@@ -133,7 +215,7 @@ class _ContactsViewState extends State<_ContactsView> {
                             return _ContactTile(
                               contact: c,
                               onTap: () =>
-                                  context.go('/profile/${c.contactId}'),
+                                  context.push('/profile/${c.contactId}'),
                               onDelete: () => context
                                   .read<ContactsBloc>()
                                   .add(ContactsDelete(c.id)),
