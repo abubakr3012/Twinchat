@@ -219,15 +219,17 @@ class _ChatViewState extends State<_ChatView> {
 
       final message = await messagesRepo.send(
         chatId: widget.chatId,
-        content: 'Voice message...',
+        content: '🎵 Голосовое сообщение',
         messageType: MessageType.audio,
       );
 
       final file = XFile(path);
       final bytes = await file.readAsBytes();
+      // Send as mp3 filename so it's recognized as audio
+      final fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}.mp3';
       final attachment = await attachmentsRepo.upload(
         bytes: bytes,
-        fileName: 'voice_${DateTime.now().millisecondsSinceEpoch}.m4a',
+        fileName: fileName,
         messageId: message.id,
       );
 
@@ -509,12 +511,24 @@ class _ChatViewState extends State<_ChatView> {
       ),
       body: SafeArea(
         child: BlocConsumer<ChatBloc, ChatState>(
-          listenWhen: (a, b) => b is ChatReady && b.error != null,
+          listenWhen: (a, b) => b is ChatReady,
           listener: (context, state) {
             if (state is ChatReady && state.error != null) {
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
                 ..showSnackBar(SnackBar(content: Text(state.error!)));
+            }
+            // Auto-scroll to bottom when new messages arrive
+            if (state is ChatReady && state.messages.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (_scroll.hasClients) {
+                  _scroll.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOut,
+                  );
+                }
+              });
             }
           },
           builder: (context, state) {
@@ -766,10 +780,58 @@ class _MessageBubble extends StatelessWidget {
                           ),
                         ),
                       ),
-                    if (message.content.isEmpty ||
-                        message.messageType == MessageType.text ||
+                    if (message.messageType == MessageType.audio &&
+                        !message.isDeleted)
+                      Container(
+                        width: 200,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isMine
+                              ? Colors.white.withOpacity(0.15)
+                              : onColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.mic_rounded,
+                                color: onColor, size: 22),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '🎵 Голосовое сообщение',
+                                    style: TextStyle(
+                                      color: onColor,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(2),
+                                    child: LinearProgressIndicator(
+                                      value: 0,
+                                      backgroundColor:
+                                          onColor.withOpacity(0.2),
+                                      color: onColor.withOpacity(0.6),
+                                      minHeight: 2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (message.isDeleted ||
+                        (message.messageType == MessageType.text &&
+                            message.content.isNotEmpty) ||
                         (message.messageType != MessageType.image &&
-                            message.messageType != MessageType.video))
+                            message.messageType != MessageType.video &&
+                            message.messageType != MessageType.audio))
                       Text(
                         message.isDeleted ? 'Удалено' : message.content,
                         style: TextStyle(
@@ -780,6 +842,7 @@ class _MessageBubble extends StatelessWidget {
                               : FontStyle.normal,
                         ),
                       ),
+
                     const SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,

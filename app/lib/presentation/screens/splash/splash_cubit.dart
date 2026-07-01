@@ -25,20 +25,27 @@ class SplashCubit extends Cubit<void> {
 
   Future<void> checkToken() async {
     final loggedIn = await _storage.hasAccess();
-    // Чуть подождём, чтобы splash был виден (UX).
-    await Future<void>.delayed(const Duration(milliseconds: 400));
+    // Give the widget tree time to mount before navigating
+    await Future<void>.delayed(const Duration(milliseconds: 600));
     if (isClosed) return;
-    final ctx = _navigatorKey.currentContext;
-    if (ctx == null || !ctx.mounted) return;
-    try {
-      final router = GoRouter.of(ctx);
-      if (loggedIn) {
-        router.go('/chats');
-      } else {
-        router.go('/login');
+    // Retry navigation a few times in case router isn't ready yet
+    for (int attempt = 0; attempt < 10; attempt++) {
+      final ctx = _navigatorKey.currentContext;
+      if (ctx != null && ctx.mounted) {
+        try {
+          final router = GoRouter.of(ctx);
+          if (loggedIn) {
+            router.go('/chats');
+          } else {
+            router.go('/login');
+          }
+          return;
+        } catch (_) {
+          // Router not ready yet, wait and retry
+        }
       }
-    } catch (_) {
-      // Router may not be ready yet
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      if (isClosed) return;
     }
   }
 }

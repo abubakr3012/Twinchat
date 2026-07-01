@@ -18,12 +18,13 @@ class ChatListLoad extends ChatListEvent {
 }
 
 class ChatListCreate extends ChatListEvent {
-  const ChatListCreate({required this.type, this.name});
+  const ChatListCreate({required this.type, this.name, this.memberId});
   final ChatType type;
   final String? name;
+  final int? memberId; // for private chats: the user to add
 
   @override
-  List<Object?> get props => [type, name];
+  List<Object?> get props => [type, name, memberId];
 }
 
 class ChatListRefresh extends ChatListEvent {
@@ -116,7 +117,11 @@ class ChatListBloc extends Bloc<ChatListEvent, ChatListState> {
     Emitter<ChatListState> emit,
   ) async {
     try {
-      await _chats.create(type: event.type, name: event.name);
+      final chat = await _chats.create(type: event.type, name: event.name);
+      // For private chats, immediately add the selected member
+      if (event.memberId != null) {
+        await _chats.addMember(chatId: chat.id, userId: event.memberId!);
+      }
       add(const ChatListRefresh());
     } on Object catch (e) {
       // Keep the previous list if available, but don't emit two states.

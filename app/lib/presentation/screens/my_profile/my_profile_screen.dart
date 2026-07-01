@@ -176,16 +176,12 @@ class _MyProfileViewState extends State<_MyProfileView> {
     final username = _username.text.trim();
     final email = _email.text.trim();
     final bio = _bio.text.trim();
+    // Dispatch event — result is shown by BlocConsumer listener
     bloc.add(ProfileUpdateMe(
       username: username.isNotEmpty ? username : null,
       email: email.isNotEmpty ? email : null,
       bio: bio.isNotEmpty ? bio : null,
     ));
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.profileUpdated)),
-      );
-    }
   }
 
   @override
@@ -212,12 +208,26 @@ class _MyProfileViewState extends State<_MyProfileView> {
         ],
       ),
       body: BlocConsumer<MyProfileBloc, ProfileState>(
-        listenWhen: (a, b) => b is ProfileReady && b.error != null,
+        listenWhen: (a, b) => b is ProfileReady,
         listener: (context, state) {
           if (state is ProfileReady && state.error != null) {
             ScaffoldMessenger.of(context)
               ..hideCurrentSnackBar()
               ..showSnackBar(SnackBar(content: Text(state.error!)));
+          } else if (state is ProfileReady && state.error == null) {
+            // Show success only when we transitioned from a previous state
+            // (not on initial load)
+            final prev = context.read<MyProfileBloc>().state;
+            if (prev is ProfileReady && prev.user != state.user) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(AppLocalizations.of(context).profileUpdated),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+            }
           }
         },
         builder: (context, state) {

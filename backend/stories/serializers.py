@@ -34,6 +34,9 @@ class StorySerializer(serializers.ModelSerializer):
 
     is_expired = serializers.SerializerMethodField()
 
+    # Return absolute URL so the Flutter app can directly use it
+    media_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Story
         fields = [
@@ -41,6 +44,7 @@ class StorySerializer(serializers.ModelSerializer):
             'user',
             'username',
             'media',
+            'media_url',
             'media_type',
             'caption',
             'created_at',
@@ -48,10 +52,19 @@ class StorySerializer(serializers.ModelSerializer):
             'views_count',
             'is_expired',
         ]
-        read_only_fields = ['id', 'user', 'created_at', 'expires_at', 'username', 'views_count', 'is_expired']
+        read_only_fields = ['id', 'user', 'created_at', 'expires_at', 'username', 'views_count', 'is_expired', 'media_url']
 
     def get_is_expired(self, obj):
         return obj.is_expired()
+
+    def get_media_url(self, obj):
+        request = self.context.get('request')
+        if obj.media and hasattr(obj.media, 'url'):
+            url = obj.media.url
+            if request is not None:
+                return request.build_absolute_uri(url)
+            return url
+        return ''
 
 
 class StoryCreateSerializer(serializers.ModelSerializer):

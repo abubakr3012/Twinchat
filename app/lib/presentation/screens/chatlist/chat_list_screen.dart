@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -517,29 +518,65 @@ class _CreateChatDialog extends StatefulWidget {
 
 class _CreateChatDialogState extends State<_CreateChatDialog> {
   final _name = TextEditingController();
+  final _search = TextEditingController();
   ChatType _type = ChatType.private;
   String? _errorText;
+  List<dynamic> _searchResults = [];
+  bool _searching = false;
+  // For private chat: selected user
+  int? _selectedUserId;
+  String? _selectedUsername;
 
   @override
   void dispose() {
     _name.dispose();
+    _search.dispose();
     super.dispose();
   }
 
-  void _submit(BuildContext context) {
-    if (_type == ChatType.group && _name.text.trim().isEmpty) {
+  Future<void> _doSearch(String q) async {
+    if (q.trim().isEmpty) {
       setState(() {
-        _errorText = AppLocalizations.of(context).emptyGroupName;
+        _searchResults = [];
+        _searching = false;
       });
       return;
     }
-    context.read<ChatListBloc>().add(
-          ChatListCreate(
-            type: _type,
-            name: _type == ChatType.group ? _name.text.trim() : null,
-          ),
-        );
-    Navigator.of(context).pop();
+    setState(() => _searching = true);
+    try {
+      final users = await GetIt.I<UsersRepository>().search(q.trim());
+      if (mounted) setState(() { _searchResults = users; _searching = false; });
+    } catch (_) {
+      if (mounted) setState(() => _searching = false);
+    }
+  }
+
+  void _submit(BuildContext context) {
+    if (_type == ChatType.private) {
+      if (_selectedUserId == null) {
+        setState(() => _errorText = AppLocalizations.of(context).searchByUsername);
+        return;
+      }
+      context.read<ChatListBloc>().add(
+            ChatListCreate(
+              type: _type,
+              memberId: _selectedUserId,
+            ),
+          );
+      Navigator.of(context).pop();
+    } else {
+      if (_name.text.trim().isEmpty) {
+        setState(() => _errorText = AppLocalizations.of(context).emptyGroupName);
+        return;
+      }
+      context.read<ChatListBloc>().add(
+            ChatListCreate(
+              type: _type,
+              name: _name.text.trim(),
+            ),
+          );
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -549,64 +586,165 @@ class _CreateChatDialogState extends State<_CreateChatDialog> {
     final l10n = AppLocalizations.of(context);
 
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
-      title: Text(
-        l10n.newChat,
-        style: theme.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SegmentedButton<ChatType>(
-            segments: [
-              ButtonSegment(
-                value: ChatType.private,
-                label: Text(l10n.private),
-                icon: const Icon(Icons.person_outline_rounded, size: 18),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(l10n.newChat,
+          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SegmentedButton<ChatType>(
+              segments: [
+                ButtonSegment(
+                  value: ChatType.private,
+                  label: Text(l10n.private),
+                  icon: const Icon(Icons.person_outline_rounded, size: 18),
+                ),
+                ButtonSegment(
+                  value: ChatType.group,
+                  label: Text(l10n.group),
+                  icon: const Icon(Icons.group_outlined, size: 18),
+                ),
+              ],
+              selected: {_type},
+              onSelectionChanged: (s) => setState(() {
+                _type = s.first;
+                _errorText = null;
+                _selectedUserId = null;
+                _selectedUsername = null;
+                _searchResults = [];
+                _search.clear();
+              }),
+              style: SegmentedButton.styleFrom(
+                selectedBackgroundColor: scheme.primaryContainer,
+                selectedForegroundColor: scheme.onPrimaryContainer,
               ),
-              ButtonSegment(
-                value: ChatType.group,
-                label: Text(l10n.group),
-                icon: const Icon(Icons.group_outlined, size: 18),
+            ),
+            const SizedBox(height: 16),
+            if (_type == ChatType.private) ...[
+              // Contact search field
+              if (_selectedUserId == null) ...[
+                TextField(
+                  controller: _search,
+                  decoration: InputDecoration(
+                    labelText: l10n.searchByUsername,
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    errorText: _errorText,
+                    suffixIcon: _searching
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : null,
+                  ),
+                  onChanged: _doSearch,
+                ),
+                if (_searchResults.isNotEmpty)
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    margin: const EdgeInsets.only(top: 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: scheme.outlineVariant),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _searchResults.length,
+                      itemBuilder: (_, i) {
+                        final u = _searchResults[i];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: scheme.primaryContainer,
+                            child: Text(
+                              (u.username as String).isNotEmpty
+                                  ? (u.username as String)[0].toUpperCase()
+                                  : '?',
+                              style: TextStyle(color: scheme.onPrimaryContainer),
+                            ),
+                          ),
+                          title: Text(u.username as String),
+                          onTap: () {
+                            setState(() {
+                              _selectedUserId = u.id as int;
+                              _selectedUsername = u.username as String;
+                              _searchResults = [];
+                              _errorText = null;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ] else ...[
+                // Selected user display
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: scheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: scheme.primary.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: scheme.primary,
+                        child: Text(
+                          _selectedUsername!.isNotEmpty
+                              ? _selectedUsername![0].toUpperCase()
+                              : '?',
+                          style: TextStyle(color: scheme.onPrimary),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _selectedUsername!,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => setState(() {
+                          _selectedUserId = null;
+                          _selectedUsername = null;
+                        }),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ] else ...[
+              TextField(
+                controller: _name,
+                decoration: InputDecoration(
+                  labelText: l10n.groupName,
+                  hintText: l10n.groupNameHint,
+                  errorText: _errorText,
+                  prefixIcon: const Icon(Icons.group_outlined, size: 22),
+                ),
+                onChanged: (val) {
+                  if (_errorText != null && val.trim().isNotEmpty) {
+                    setState(() => _errorText = null);
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.chatLimitNote,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
-            selected: {_type},
-            onSelectionChanged: (s) => setState(() => _type = s.first),
-            style: SegmentedButton.styleFrom(
-              selectedBackgroundColor: scheme.primaryContainer,
-              selectedForegroundColor: scheme.onPrimaryContainer,
-            ),
-          ),
-          if (_type == ChatType.group) ...[
-            const SizedBox(height: 16),
-            TextField(
-              controller: _name,
-              decoration: InputDecoration(
-                labelText: l10n.groupName,
-                hintText: l10n.groupNameHint,
-                errorText: _errorText,
-                prefixIcon: const Icon(Icons.group_outlined, size: 22),
-              ),
-              onChanged: (val) {
-                if (_errorText != null && val.trim().isNotEmpty) {
-                  setState(() => _errorText = null);
-                }
-              },
-            ),
           ],
-          const SizedBox(height: 12),
-          Text(
-            l10n.chatLimitNote,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
       actions: [
         TextButton(
@@ -621,6 +759,7 @@ class _CreateChatDialogState extends State<_CreateChatDialog> {
     );
   }
 }
+
 
 class _GroupSettingsDialog extends StatelessWidget {
   const _GroupSettingsDialog({required this.chat});
@@ -691,20 +830,47 @@ class _ContactsTabState extends State<_ContactsTab> {
     }
   }
 
-  Future<void> _requestPermission() async {
+  Future<void> _requestPermission(BuildContext context) async {
     final status = await Permission.contacts.request();
     if (mounted) {
       setState(() => _hasPermission = status.isGranted);
+      if (status.isGranted) {
+        // Auto-sync device contacts after permission granted
+        _syncDeviceContacts(context);
+      }
     }
   }
 
-  Future<void> _openChatWithContact(
-      BuildContext context, Contact c) async {
+  Future<void> _syncDeviceContacts(BuildContext context) async {
     try {
-      // Create or find private chat with the contact user
+      final contacts = await fc.FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: false,
+      );
+      final phoneContacts = contacts
+          .where((c) => c.phones.isNotEmpty && c.phones.first.number.isNotEmpty)
+          .toList();
+      if (!mounted) return;
+      final bloc = context.read<ContactsBloc>();
+      for (final contact in phoneContacts) {
+        final phone = contact.phones.first.number.replaceAll(RegExp(r'[^\d+]'), '');
+        bloc.add(ContactsSyncDeviceContact(
+          name: contact.displayName,
+          phone: phone,
+        ));
+      }
+      // Reload contacts list after sync
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      if (mounted) bloc.add(const ContactsLoad());
+    } catch (_) {
+      // silently ignore sync errors
+    }
+  }
+
+  Future<void> _openChatWithContact(BuildContext context, Contact c) async {
+    try {
       final chatsRepo = GetIt.I<ChatsRepository>();
       final chats = await chatsRepo.list();
-      // Try to find existing private chat with this user
       Chat? existing;
       try {
         existing = chats.firstWhere(
@@ -718,7 +884,6 @@ class _ContactsTabState extends State<_ContactsTab> {
       if (existing != null) {
         if (context.mounted) context.go('/chat/${existing.id}');
       } else {
-        // Create new private chat and add the contact as a member
         final newChat = await chatsRepo.create(type: ChatType.private);
         await chatsRepo.addMember(chatId: newChat.id, userId: c.contactId);
         if (context.mounted) context.go('/chat/${newChat.id}');
@@ -736,59 +901,13 @@ class _ContactsTabState extends State<_ContactsTab> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     if (_checkingPermission) {
       return Center(child: CircularProgressIndicator(color: scheme.primary));
     }
 
-    if (!_hasPermission) {
-      final l10n = AppLocalizations.of(context);
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: scheme.primaryContainer.withOpacity(0.3),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.contacts_outlined,
-                  size: 40,
-                  color: scheme.primary,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                l10n.allowContactAccess,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.allowContactAccessHint,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: _requestPermission,
-                icon: const Icon(Icons.contacts_rounded, size: 20),
-                label: Text(l10n.allowContactAccess),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
+    // Always show contacts from server, even without device permission
     return BlocProvider<ContactsBloc>(
       create: (_) => ContactsBloc(
         contactsRepository: GetIt.I<ContactsRepository>(),
@@ -796,74 +915,106 @@ class _ContactsTabState extends State<_ContactsTab> {
       )..add(const ContactsLoad()),
       child: BlocBuilder<ContactsBloc, ContactsState>(
         builder: (context, state) {
-          final l10n = AppLocalizations.of(context);
           if (state is ContactsInitial || state is ContactsLoading) {
             return Center(
               child: CircularProgressIndicator(color: scheme.primary),
             );
           }
           final ready = state as ContactsReady;
-          if (ready.contacts.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.contacts_outlined,
-                      size: 64, color: scheme.primary.withOpacity(0.5)),
-                  const SizedBox(height: 16),
-                  Text(
-                    l10n.noContacts,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
+          return Column(
+            children: [
+              // Sync device contacts banner if no permission
+              if (!_hasPermission)
+                Container(
+                  margin: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: scheme.primaryContainer.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Нажмите + чтобы добавить',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-          return RefreshIndicator(
-            onRefresh: () async =>
-                context.read<ContactsBloc>().add(const ContactsLoad()),
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: ready.contacts.length,
-              itemBuilder: (_, i) {
-                final c = ready.contacts[i];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: scheme.primaryContainer,
-                    child: Text(
-                      c.displayName.isEmpty
-                          ? '?'
-                          : c.displayName.characters.first.toUpperCase(),
-                      style: TextStyle(color: scheme.onPrimaryContainer),
-                    ),
-                  ),
-                  title: Text(c.displayName),
-                  subtitle: Text('@${c.username}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Row(
                     children: [
-                      IconButton(
-                        icon: Icon(Icons.message_rounded,
-                            color: scheme.primary, size: 22),
-                        tooltip: l10n.openChat,
-                        onPressed: () => _openChatWithContact(context, c),
+                      Icon(Icons.sync_rounded, color: scheme.primary, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          l10n.allowContactAccess,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurface,
+                          ),
+                        ),
                       ),
-                      const Icon(Icons.chevron_right_rounded),
+                      TextButton(
+                        onPressed: () => _requestPermission(context),
+                        child: Text(l10n.allowContactAccess),
+                      ),
                     ],
                   ),
-                  onTap: () => context.go('/profile/${c.contactId}'),
-                );
-              },
-            ),
+                ),
+              Expanded(
+                child: ready.contacts.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.contacts_outlined,
+                                size: 64, color: scheme.primary.withOpacity(0.5)),
+                            const SizedBox(height: 16),
+                            Text(
+                              l10n.noContacts,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Нажмите + чтобы добавить',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: () async =>
+                            context.read<ContactsBloc>().add(const ContactsLoad()),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          itemCount: ready.contacts.length,
+                          itemBuilder: (_, i) {
+                            final c = ready.contacts[i];
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: scheme.primaryContainer,
+                                child: Text(
+                                  c.displayName.isEmpty
+                                      ? '?'
+                                      : c.displayName.characters.first.toUpperCase(),
+                                  style: TextStyle(color: scheme.onPrimaryContainer),
+                                ),
+                              ),
+                              title: Text(c.displayName),
+                              subtitle: Text('@${c.username}'),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.message_rounded,
+                                        color: scheme.primary, size: 22),
+                                    tooltip: l10n.openChat,
+                                    onPressed: () => _openChatWithContact(context, c),
+                                  ),
+                                  const Icon(Icons.chevron_right_rounded),
+                                ],
+                              ),
+                              onTap: () => context.go('/profile/${c.contactId}'),
+                            );
+                          },
+                        ),
+                      ),
+              ),
+            ],
           );
         },
       ),

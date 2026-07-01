@@ -39,7 +39,10 @@ class StoryDto {
         id: (json['id'] as num).toInt(),
         userId: (json['user'] as num).toInt(),
         username: json['username'] as String? ?? '',
-        mediaUrl: json['media'] as String? ?? '',
+        // Prefer media_url (absolute) returned by backend; fall back to media
+        mediaUrl: (json['media_url'] as String?)?.isNotEmpty == true
+            ? json['media_url'] as String
+            : (json['media'] as String? ?? ''),
         mediaType: json['media_type'] as String? ?? 'image',
         caption: json['caption'] as String?,
         createdAt: json['created_at'] != null
