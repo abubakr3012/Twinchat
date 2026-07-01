@@ -30,6 +30,7 @@ String? _describeDio(DioException e) {
     case DioExceptionType.connectionTimeout:
     case DioExceptionType.sendTimeout:
     case DioExceptionType.receiveTimeout:
+    case DioExceptionType.transformTimeout:
       return 'Нет соединения с сервером';
     case DioExceptionType.connectionError:
       return 'Нет подключения к интернету';

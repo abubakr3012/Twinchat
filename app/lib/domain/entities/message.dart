@@ -34,6 +34,7 @@ class Message extends Equatable {
     required this.createdAt,
     this.isEdited = false,
     this.isDeleted = false,
+    this.readBy = const [],
   });
 
   final int id;
@@ -45,12 +46,14 @@ class Message extends Equatable {
   final DateTime createdAt;
   final bool isEdited;
   final bool isDeleted;
+  final List<int> readBy;
 
   Message copyWith({
     int? id,
     String? content,
     bool? isEdited,
     bool? isDeleted,
+    List<int>? readBy,
   }) {
     return Message(
       id: id ?? this.id,
@@ -62,6 +65,7 @@ class Message extends Equatable {
       createdAt: createdAt,
       isEdited: isEdited ?? this.isEdited,
       isDeleted: isDeleted ?? this.isDeleted,
+      readBy: readBy ?? this.readBy,
     );
   }
 
@@ -76,5 +80,6 @@ class Message extends Equatable {
         createdAt,
         isEdited,
         isDeleted,
+        readBy,
       ];
 }

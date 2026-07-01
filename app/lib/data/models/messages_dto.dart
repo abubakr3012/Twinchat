@@ -9,6 +9,7 @@ class MessageDto {
     required this.createdAt,
     this.isEdited = false,
     this.isDeleted = false,
+    this.readBy = const [],
   });
 
   factory MessageDto.fromJson(Map<String, dynamic> json) => MessageDto(
@@ -23,6 +24,10 @@ class MessageDto {
             : DateTime.now(),
         isEdited: json['is_edited'] as bool? ?? false,
         isDeleted: json['is_deleted'] as bool? ?? false,
+        readBy: (json['read_by'] as List<dynamic>?)
+                ?.map((e) => (e as num).toInt())
+                .toList() ??
+            [],
       );
 
   final int id;
@@ -34,4 +39,5 @@ class MessageDto {
   final DateTime createdAt;
   final bool isEdited;
   final bool isDeleted;
+  final List<int> readBy;
 }

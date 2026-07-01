@@ -2,7 +2,8 @@
 
 from .views import (
     MessageListCreateView,
-    MessageUpdateDeleteView
+    MessageUpdateDeleteView,
+    MessageMarkReadView
 )
 
 
@@ -18,6 +19,11 @@ urlpatterns = [
     path(
         '<int:pk>/',
         MessageUpdateDeleteView.as_view()
+    ),
+
+    path(
+        'chat/<int:chat_id>/<int:message_id>/read/',
+        MessageMarkReadView.as_view()
     ),
 
 ]

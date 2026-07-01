@@ -8,6 +8,11 @@ class MessageSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    read_by = serializers.PrimaryKeyRelatedField(
+        many=True,
+        read_only=True
+    )
+
 
     class Meta:
 
@@ -22,6 +27,7 @@ class MessageSerializer(serializers.ModelSerializer):
             'message_type',
             'is_edited',
             'is_deleted',
+            'read_by',
             'created_at',
             'updated_at'
         ]
@@ -30,6 +36,7 @@ class MessageSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'chat',
             'sender',
+            'read_by',
             'created_at',
             'updated_at'
         ]

@@ -80,6 +80,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'sender_id': self.user.id,
                 'sender_username': self.user.username,
                 'sent_at': message.created_at.isoformat(),
+                'read_by': [u.id for u in message.read_by.all()],
             }
         )
 
@@ -119,6 +120,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'sender_id': event['sender_id'],
             'sender_username': event['sender_username'],
             'sent_at': event['sent_at'],
+            'read_by': event.get('read_by', []),
         }))
 
     async def typing_status(self, event):

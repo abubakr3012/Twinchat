@@ -1,13 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/storage/token_storage.dart';
+import '../../../core/utils/text_size_provider.dart';
 import '../../../domain/entities/message.dart';
 import '../../../domain/repositories/attachments_repository.dart';
 import '../../../domain/repositories/messages_repository.dart';
@@ -102,21 +103,26 @@ class _ChatViewState extends State<_ChatView> {
     }
   }
 
+  void _recordAndSendVoice() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('Запись голосовых сообщений будет добавлена в следующей версии')),
+    );
+  }
+
   Future<void> _sendXFile(XFile xfile, MessageType type) async {
     if (_isUploading) return;
     setState(() => _isUploading = true);
     try {
       final messagesRepo = GetIt.I<MessagesRepository>();
       final attachmentsRepo = GetIt.I<AttachmentsRepository>();
-      
-      // First create a message with placeholder content
+
       final message = await messagesRepo.send(
         chatId: widget.chatId,
         content: 'Uploading...',
         messageType: type,
       );
 
-      // Then upload the attachment with the message_id
       final bytes = await xfile.readAsBytes();
       final attachment = await attachmentsRepo.upload(
         bytes: bytes,
@@ -125,11 +131,10 @@ class _ChatViewState extends State<_ChatView> {
       );
 
       if (!mounted) return;
-      // Update the message content with the attachment URL
       context.read<ChatBloc>().add(ChatEdit(
-        messageId: message.id,
-        content: attachment.url,
-      ));
+            messageId: message.id,
+            content: attachment.url,
+          ));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -143,28 +148,104 @@ class _ChatViewState extends State<_ChatView> {
     }
   }
 
+  void _showMediaViewer(BuildContext context, String url, String type) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            if (type == 'image')
+              InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.contain,
+                  placeholder: (context, url) =>
+                      const Center(child: CircularProgressIndicator()),
+                  errorWidget: (context, url, error) =>
+                      const Center(child: Icon(Icons.broken_image)),
+                ),
+              )
+            else
+              Container(
+                color: Colors.black,
+                child: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.play_circle_outline,
+                          size: 80, color: Colors.white),
+                      SizedBox(height: 16),
+                      Text(
+                        'Видео',
+                        style: TextStyle(color: Colors.white, fontSize: 18),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            Positioned(
+              top: 16,
+              right: 16,
+              child: IconButton(
+                icon: const Icon(Icons.close_rounded,
+                    color: Colors.white, size: 28),
+                onPressed: () => Navigator.of(context).pop(),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withOpacity(0.5),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showMessageMenu(BuildContext context, Message m) {
-    final bloc = context.read<ChatBloc>();
+    final scheme = Theme.of(context).colorScheme;
     showModalBottomSheet<void>(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              decoration: BoxDecoration(
+                color: scheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
             ListTile(
-              leading: const Icon(Icons.edit),
+              leading: const Icon(Icons.edit_rounded),
               title: const Text('Редактировать'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               onTap: () async {
                 Navigator.of(context).pop();
                 final result = await _askEdit(context, m.content);
                 if (result != null) {
-                  bloc.add(ChatEdit(messageId: m.id, content: result));
+                  context
+                      .read<ChatBloc>()
+                      .add(ChatEdit(messageId: m.id, content: result));
                 }
               },
             ),
             ListTile(
               leading: const Icon(Icons.emoji_emotions_outlined),
               title: const Text('Поставить реакцию'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               onTap: () async {
                 Navigator.of(context).pop();
                 final emoji = await _askEmoji(context);
@@ -188,13 +269,17 @@ class _ChatViewState extends State<_ChatView> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: const Text('Удалить'),
+              leading: Icon(Icons.delete_outline_rounded, color: scheme.error),
+              title: Text('Удалить', style: TextStyle(color: scheme.error)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               onTap: () {
                 Navigator.of(context).pop();
-                bloc.add(ChatDelete(m.id));
+                context.read<ChatBloc>().add(ChatDelete(m.id));
               },
             ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -211,6 +296,9 @@ class _ChatViewState extends State<_ChatView> {
           controller: controller,
           autofocus: true,
           maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'Введите текст',
+          ),
         ),
         actions: [
           TextButton(
@@ -218,7 +306,8 @@ class _ChatViewState extends State<_ChatView> {
             child: const Text('Отмена'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            onPressed: () =>
+                Navigator.of(context).pop(controller.text.trim()),
             child: const Text('Сохранить'),
           ),
         ],
@@ -227,15 +316,18 @@ class _ChatViewState extends State<_ChatView> {
   }
 
   Future<String?> _askEmoji(BuildContext context) async {
-    final emojis = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
+    final emojis = ['👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '🎉'];
     return showDialog<String>(
       context: context,
       builder: (_) => SimpleDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         children: emojis
             .map(
               (e) => SimpleDialogOption(
                 onPressed: () => Navigator.of(context).pop(e),
-                child: Text(e, style: const TextStyle(fontSize: 28)),
+                child: Text(e, style: const TextStyle(fontSize: 32)),
               ),
             )
             .toList(),
@@ -245,18 +337,32 @@ class _ChatViewState extends State<_ChatView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Чат #${widget.chatId}'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
           onPressed: () => context.go('/chats'),
+        ),
+        title: Text(
+          'Чат #${widget.chatId}',
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         actions: [
           IconButton(
             tooltip: 'Позвонить',
-            icon: const Icon(Icons.call_outlined),
+            icon: const Icon(Icons.call_outlined, size: 22),
             onPressed: () => context.go('/call/${widget.chatId}'),
+          ),
+          IconButton(
+            tooltip: 'Поиск',
+            icon: const Icon(Icons.search_rounded, size: 22),
+            onPressed: () {},
           ),
         ],
       ),
@@ -272,50 +378,125 @@ class _ChatViewState extends State<_ChatView> {
           },
           builder: (context, state) {
             if (state is ChatInitial || state is ChatLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return Center(
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: scheme.primary,
+                  ),
+                ),
+              );
             }
             final ready = state as ChatReady;
             final typing = ready.typingUsers.values.toList();
-            return Column(
-              children: [
-                Expanded(
-                  child: ready.messages.isEmpty
-                      ? const Center(
-                          child: Text('Сообщений пока нет.\nНапишите первым!',
-                              textAlign: TextAlign.center),
-                        )
-                      : ListView.builder(
-                          controller: _scroll,
-                          padding: const EdgeInsets.all(8),
-                          itemCount: ready.messages.length,
-                          itemBuilder: (_, i) {
-                            final m = ready.messages[i];
-                            return _MessageBubble(
-                              message: m,
-                              isMine: m.senderId == ready.currentUserId,
-                              onLongPress: () => _showMessageMenu(context, m),
-                            );
-                          },
-                        ),
-                ),
-                if (typing.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 4),
-                    child: Text(
-                      '${typing.join(', ')} печатает...',
-                      style: const TextStyle(fontStyle: FontStyle.italic),
-                    ),
+            return Container(
+              color: scheme.surfaceContainerLow.withOpacity(0.5),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ready.messages.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        scheme.primaryContainer.withOpacity(0.3),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.chat_bubble_outline_rounded,
+                                    size: 40,
+                                    color: scheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Нет сообщений',
+                                  style:
+                                      theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Напишите первым!',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: scheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: _scroll,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            itemCount: ready.messages.length,
+                            itemBuilder: (_, i) {
+                              final m = ready.messages[i];
+                              return _MessageBubble(
+                                message: m,
+                                isMine: m.senderId == ready.currentUserId,
+                                onLongPress: () =>
+                                    _showMessageMenu(context, m),
+                                onMediaTap: (m.messageType ==
+                                                MessageType.image ||
+                                            m.messageType ==
+                                                MessageType.video) &&
+                                        m.content.isNotEmpty
+                                    ? () => _showMediaViewer(
+                                        context,
+                                        m.content,
+                                        m.messageType == MessageType.image
+                                            ? 'image'
+                                            : 'video')
+                                    : null,
+                              );
+                            },
+                          ),
                   ),
-                _Composer(
-                  controller: _controller,
-                  onSend: _send,
-                  onChanged: _onTextChanged,
-                  onPickImage: _pickAndSendImage,
-                  onPickVideo: _pickAndSendVideo,
-                  isUploading: _isUploading,
-                ),
-              ],
+                  if (typing.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: scheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${typing.join(', ')} печатает...',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: scheme.primary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  _Composer(
+                    controller: _controller,
+                    onSend: _send,
+                    onChanged: _onTextChanged,
+                    onPickImage: _pickAndSendImage,
+                    onPickVideo: _pickAndSendVideo,
+                    onRecordVoice: _recordAndSendVoice,
+                    isUploading: _isUploading,
+                  ),
+                ],
+              ),
             );
           },
         ),
@@ -329,18 +510,22 @@ class _MessageBubble extends StatelessWidget {
     required this.message,
     required this.isMine,
     required this.onLongPress,
+    required this.onMediaTap,
   });
 
   final Message message;
   final bool isMine;
   final VoidCallback onLongPress;
+  final VoidCallback? onMediaTap;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final align = isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start;
-    final color = isMine ? scheme.primary : scheme.surfaceContainerHighest;
+    final color = isMine
+        ? scheme.primary
+        : scheme.surfaceContainerHighest;
     final onColor = isMine ? scheme.onPrimary : scheme.onSurface;
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
@@ -348,89 +533,131 @@ class _MessageBubble extends StatelessWidget {
         onLongPress: onLongPress,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75,
+            maxWidth: MediaQuery.of(context).size.width * 0.78,
           ),
           child: Column(
-            crossAxisAlignment: align,
+            crossAxisAlignment:
+                isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               if (!isMine)
                 Padding(
-                  padding: const EdgeInsets.only(left: 8, bottom: 2),
+                  padding: const EdgeInsets.only(left: 12, bottom: 4),
                   child: Text(
                     message.senderUsername,
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.primary,
+                    ),
                   ),
                 ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
+                    horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(18),
+                    topRight: const Radius.circular(18),
+                    bottomLeft: Radius.circular(isMine ? 18 : 4),
+                    bottomRight: Radius.circular(isMine ? 4 : 18),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (message.messageType == MessageType.image && message.content.isNotEmpty)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: message.content,
+                    if (message.messageType == MessageType.image &&
+                        message.content.isNotEmpty)
+                      GestureDetector(
+                        onTap: onMediaTap,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: message.content,
+                            width: 200,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => const SizedBox(
+                              width: 200,
+                              height: 150,
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                            errorWidget: (context, url, error) =>
+                                const SizedBox(
+                              width: 200,
+                              height: 150,
+                              child: Center(child: Icon(Icons.broken_image)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (message.messageType == MessageType.video &&
+                        message.content.isNotEmpty)
+                      GestureDetector(
+                        onTap: onMediaTap,
+                        child: Container(
                           width: 200,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const SizedBox(
-                            width: 200,
-                            height: 150,
-                            child: Center(child: CircularProgressIndicator()),
+                          height: 150,
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          errorWidget: (context, url, error) => const SizedBox(
-                            width: 200,
-                            height: 150,
-                            child: Center(child: Icon(Icons.broken_image)),
+                          child: const Center(
+                            child: Icon(Icons.play_circle_outline,
+                                size: 50, color: Colors.white),
                           ),
                         ),
                       ),
-                    if (message.messageType == MessageType.video && message.content.isNotEmpty)
-                      Container(
-                        width: 200,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.play_circle_outline, 
-                            size: 50, 
-                            color: Colors.white),
-                        ),
-                      ),
-                    if (message.messageType == MessageType.text || message.content.isEmpty)
+                    if (message.messageType == MessageType.text ||
+                        message.content.isEmpty)
                       Text(
                         message.isDeleted ? 'Удалено' : message.content,
-                        style: TextStyle(
+                        style: GoogleFonts.inter(
                           color: onColor,
+                          fontSize: TextSizeProvider.instance.textSize.toDouble(),
                           fontStyle: message.isDeleted
                               ? FontStyle.italic
                               : FontStyle.normal,
                         ),
                       ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           DateFormat.Hm().format(message.createdAt.toLocal()),
-                          style: TextStyle(
-                              color: onColor.withValues(alpha: 0.7),
-                              fontSize: 11),
+                          style: GoogleFonts.inter(
+                            color: onColor.withOpacity(0.6),
+                            fontSize: 11,
+                          ),
                         ),
+                        if (isMine) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            message.readBy.isNotEmpty
+                                ? Icons.done_all_rounded
+                                : Icons.done_rounded,
+                            size: 16,
+                            color: message.readBy.isNotEmpty
+                                ? const Color(0xFF34B7F1)
+                                : onColor.withOpacity(0.6),
+                          ),
+                        ],
                         if (message.isEdited) ...[
-                          const SizedBox(width: 6),
-                          Text('ред.',
-                              style: TextStyle(
-                                  color: onColor.withValues(alpha: 0.7),
-                                  fontSize: 11)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'ред.',
+                            style: GoogleFonts.inter(
+                              color: onColor.withOpacity(0.6),
+                              fontSize: 11,
+                            ),
+                          ),
                         ],
                       ],
                     ),
@@ -453,6 +680,7 @@ class _Composer extends StatefulWidget {
     required this.onPickImage,
     required this.onPickVideo,
     required this.isUploading,
+    required this.onRecordVoice,
   });
 
   final TextEditingController controller;
@@ -460,6 +688,7 @@ class _Composer extends StatefulWidget {
   final ValueChanged<String> onChanged;
   final VoidCallback onPickImage;
   final VoidCallback onPickVideo;
+  final VoidCallback onRecordVoice;
   final bool isUploading;
 
   @override
@@ -485,70 +714,181 @@ class _ComposerState extends State<_Composer> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return Container(
-      padding: const EdgeInsets.all(8),
-      color: Theme.of(context).colorScheme.surface,
-      child: Row(
-        children: [
-          IconButton(
-            tooltip: 'Прикрепить файл',
-            icon: widget.isUploading 
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.attach_file),
-            onPressed: widget.isUploading 
-                ? null 
-                : () {
-                    showModalBottomSheet<void>(
-                      context: context,
-                      builder: (_) => SafeArea(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.photo_library),
-                              title: const Text('Фото'),
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                widget.onPickImage();
-                              },
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.video_library),
-                              title: const Text('Видео'),
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                widget.onPickVideo();
-                              },
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            // Attach button
+            IconButton(
+              tooltip: 'Прикрепить файл',
+              icon: widget.isUploading
+                  ? SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: scheme.primary,
+                      ),
+                    )
+                  : Icon(
+                      Icons.add_circle_outline_rounded,
+                      color: scheme.onSurfaceVariant,
+                    ),
+              onPressed: widget.isUploading
+                  ? null
+                  : () {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(20)),
+                        ),
+                        builder: (_) => SafeArea(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 4,
+                                margin:
+                                    const EdgeInsets.only(top: 12, bottom: 8),
+                                decoration: BoxDecoration(
+                                  color: scheme.outlineVariant,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              ListTile(
+                                leading: Icon(Icons.photo_library_rounded,
+                                    color: scheme.primary),
+                                title: const Text('Фото'),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  widget.onPickImage();
+                                },
+                              ),
+                              ListTile(
+                                leading: Icon(Icons.video_library_rounded,
+                                    color: scheme.primary),
+                                title: const Text('Видео'),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  widget.onPickVideo();
+                                },
+                              ),
+                              ListTile(
+                                leading: Icon(Icons.mic_rounded,
+                                    color: scheme.primary),
+                                title: const Text('Голосовое сообщение'),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  widget.onRecordVoice();
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+            ),
+
+            // Text field
+            Expanded(
+              child: TextField(
+                controller: widget.controller,
+                onChanged: widget.onChanged,
+                onSubmitted: (_) => widget.onSend(),
+                minLines: 1,
+                maxLines: 5,
+                textInputAction: TextInputAction.send,
+                style: GoogleFonts.inter(fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: 'Сообщение...',
+                  hintStyle: GoogleFonts.inter(
+                    color: scheme.onSurfaceVariant.withOpacity(0.5),
+                  ),
+                  filled: true,
+                  fillColor: scheme.surfaceContainerHighest.withOpacity(0.3),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            // Send / Voice button
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              child: widget.controller.text.isNotEmpty
+                  ? IconButton(
+                      onPressed: widget.onSend,
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: scheme.primary,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: scheme.primary.withOpacity(0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
+                        child: Icon(
+                          Icons.send_rounded,
+                          color: scheme.onPrimary,
+                          size: 20,
+                        ),
                       ),
-                    );
-                  },
-          ),
-          Expanded(
-            child: TextField(
-              controller: widget.controller,
-              onChanged: widget.onChanged,
-              onSubmitted: (_) => widget.onSend(),
-              minLines: 1,
-              maxLines: 4,
-              textInputAction: TextInputAction.send,
-              decoration: const InputDecoration(
-                hintText: 'Сообщение',
-                border: OutlineInputBorder(),
-              ),
+                    )
+                  : IconButton(
+                      onPressed: widget.onRecordVoice,
+                      icon: Icon(
+                        Icons.mic_rounded,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: widget.onSend,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

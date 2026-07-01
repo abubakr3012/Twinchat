@@ -48,7 +48,7 @@ class StorySerializer(serializers.ModelSerializer):
             'views_count',
             'is_expired',
         ]
-        read_only_fields = ['id', 'user', 'created_at', 'expires_at']
+        read_only_fields = ['id', 'user', 'created_at', 'expires_at', 'username', 'views_count', 'is_expired']
 
     def get_is_expired(self, obj):
         return obj.is_expired()

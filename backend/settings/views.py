@@ -9,6 +9,7 @@ class ChatSettingsView(generics.RetrieveUpdateAPIView):
     
     permission_classes = [IsAuthenticated]
     serializer_class = ChatSettingsSerializer
+    http_method_names = ['get', 'patch', 'options']
 
     def get_object(self):
         obj, _ = ChatSettings.objects.get_or_create(user=self.request.user)
@@ -19,6 +20,7 @@ class PrivacyView(generics.RetrieveUpdateAPIView):
     
     permission_classes = [IsAuthenticated]
     serializer_class = PrivacySerializer
+    http_method_names = ['get', 'patch', 'options']
 
     def get_object(self):
         obj, _ = Privacy.objects.get_or_create(user=self.request.user)
@@ -29,6 +31,7 @@ class AppLanguageView(generics.RetrieveUpdateAPIView):
     
     permission_classes = [IsAuthenticated]
     serializer_class = AppLanguageSerializer
+    http_method_names = ['get', 'patch', 'options']
 
     def get_object(self):
         obj, _ = AppLanguage.objects.get_or_create(user=self.request.user)

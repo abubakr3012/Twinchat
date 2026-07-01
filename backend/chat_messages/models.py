@@ -49,6 +49,16 @@ class Message(models.Model):
         default=False
     )
 
+    is_encrypted = models.BooleanField(
+        default=False,
+        help_text='Сообщение зашифровано E2E'
+    )
+
+    read_by = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='read_messages',
+        blank=True
+    )
 
     created_at = models.DateTimeField(
         auto_now_add=True

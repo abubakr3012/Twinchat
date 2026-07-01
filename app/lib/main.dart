@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
+import 'core/utils/theme_mode_provider.dart';
 import 'di/injection.dart';
 import 'presentation/router/app_router.dart';
 
@@ -12,8 +13,29 @@ Future<void> main() async {
   runApp(const TwinChatApp());
 }
 
-class TwinChatApp extends StatelessWidget {
+class TwinChatApp extends StatefulWidget {
   const TwinChatApp({super.key});
+
+  @override
+  State<TwinChatApp> createState() => _TwinChatAppState();
+}
+
+class _TwinChatAppState extends State<TwinChatApp> {
+  @override
+  void initState() {
+    super.initState();
+    ThemeModeProvider.instance.addListener(_onThemeChanged);
+  }
+
+  @override
+  void dispose() {
+    ThemeModeProvider.instance.removeListener(_onThemeChanged);
+    super.dispose();
+  }
+
+  void _onThemeChanged() {
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +46,7 @@ class TwinChatApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.system,
+      themeMode: ThemeModeProvider.instance.themeMode,
       routerConfig: router.config,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

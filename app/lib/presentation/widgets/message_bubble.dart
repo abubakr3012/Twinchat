@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// "Пузырь" сообщения в чате.
+/// "Пузырь" сообщения в чате с современным дизайном.
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
@@ -10,77 +11,96 @@ class MessageBubble extends StatelessWidget {
     this.status,
     this.encrypted = false,
     this.tail = true,
+    this.child,
   });
 
   final String text;
   final bool isMine;
   final String? time;
-  final String? status; // для MessageStatusIcon
+  final String? status;
   final bool encrypted;
   final bool tail;
+  final Widget? child;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final bg = isMine ? scheme.primary : scheme.surfaceContainerHigh;
+    final bg = isMine
+        ? scheme.primary
+        : scheme.surfaceContainerHighest;
     final fg = isMine ? scheme.onPrimary : scheme.onSurface;
 
     final radius = BorderRadius.only(
-      topLeft: const Radius.circular(16),
-      topRight: const Radius.circular(16),
-      bottomLeft: Radius.circular(isMine ? 16 : 4),
-      bottomRight: Radius.circular(isMine ? 4 : 16),
+      topLeft: const Radius.circular(18),
+      topRight: const Radius.circular(18),
+      bottomLeft: Radius.circular(isMine ? 18 : 4),
+      bottomRight: Radius.circular(isMine ? 4 : 18),
     );
 
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+        margin: const EdgeInsets.symmetric(vertical: 3, horizontal: 8),
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.78,
         ),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: tail ? radius : BorderRadius.circular(16),
+          borderRadius: tail ? radius : BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (child != null) ...[
+              child!,
+              const SizedBox(height: 6),
+            ],
             Row(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 if (encrypted) ...[
-                  Icon(Icons.lock, size: 12, color: fg.withOpacity(0.7)),
+                  Icon(Icons.lock_rounded,
+                      size: 12, color: fg.withOpacity(0.6)),
                   const SizedBox(width: 4),
                 ],
                 Flexible(
                   child: Text(
                     text,
-                    style: TextStyle(color: fg, fontSize: 15),
+                    style: GoogleFonts.inter(
+                      color: fg,
+                      fontSize: 15,
+                      height: 1.4,
+                    ),
                   ),
                 ),
               ],
             ),
             if (time != null || status != null) ...[
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (time != null)
                     Text(
                       time!,
-                      style: TextStyle(
-                        color: fg.withOpacity(0.6),
+                      style: GoogleFonts.inter(
+                        color: fg.withOpacity(0.55),
                         fontSize: 11,
                       ),
                     ),
                   if (status != null && isMine) ...[
                     const SizedBox(width: 4),
-                    // status icon адаптируется под цвет пузыря
-                    _StatusOnBubble(status: status!, mineColor: fg),
+                    _StatusIcon(status: status!, color: fg),
                   ],
                 ],
               ),
@@ -92,29 +112,34 @@ class MessageBubble extends StatelessWidget {
   }
 }
 
-class _StatusOnBubble extends StatelessWidget {
-  const _StatusOnBubble({required this.status, required this.mineColor});
+class _StatusIcon extends StatelessWidget {
+  const _StatusIcon({required this.status, required this.color});
   final String status;
-  final Color mineColor;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final c = mineColor.withOpacity(0.7);
+    final c = color.withOpacity(0.7);
     switch (status) {
       case 'seen':
-        return Icon(Icons.done_all, size: 14, color: Theme.of(context).colorScheme.primary);
+        return Icon(Icons.done_all_rounded,
+            size: 16, color: const Color(0xFF34B7F1));
       case 'delivered':
-        return Icon(Icons.done_all, size: 14, color: c);
+        return Icon(Icons.done_all_rounded, size: 16, color: c);
       case 'sent':
-        return Icon(Icons.done, size: 14, color: c);
+        return Icon(Icons.done_rounded, size: 16, color: c);
       case 'pending':
         return SizedBox(
-          width: 12,
-          height: 12,
-          child: CircularProgressIndicator(strokeWidth: 1.4, color: c),
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(
+            strokeWidth: 1.5,
+            color: c,
+          ),
         );
       case 'failed':
-        return Icon(Icons.error_outline, size: 14, color: Theme.of(context).colorScheme.error);
+        return Icon(Icons.error_outline_rounded,
+            size: 16, color: Theme.of(context).colorScheme.error);
       default:
         return const SizedBox.shrink();
     }

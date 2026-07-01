@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
@@ -28,7 +29,6 @@ class CodeScreen extends StatelessWidget {
     }
 
     if (phone == null) {
-      // Без номера возвращаемся назад.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) context.go('/phone');
       });
@@ -128,34 +128,33 @@ class _CodeViewState extends State<_CodeView> {
 
   @override
   Widget build(BuildContext context) {
-    // Запускаем автозаполнение после первого кадра.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAutofill());
 
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Введите код'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/phone'),
-        ),
-      ),
       body: SafeArea(
         child: BlocConsumer<AuthBloc, AuthState>(
           listenWhen: (prev, curr) =>
-              curr is AuthAuthenticated || curr is AuthFailureState || curr is AuthCodeSent,
+              curr is AuthAuthenticated ||
+              curr is AuthFailureState ||
+              curr is AuthCodeSent,
           listener: (context, state) {
             if (state is AuthAuthenticated) {
               context.go('/chats');
               return;
             }
             if (state is AuthCodeSent) {
-              // Повторно отправили код — показываем SnackBar и обновим автозаполнение.
               _autoFillDone = false;
               _maybeAutofill();
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
                 ..showSnackBar(
-                  SnackBar(content: Text('Код отправлен повторно на ${state.phoneNumber}')),
+                  SnackBar(
+                    content: Text(
+                        'Код отправлен повторно на ${state.phoneNumber}'),
+                  ),
                 );
               return;
             }
@@ -167,64 +166,218 @@ class _CodeViewState extends State<_CodeView> {
           },
           builder: (context, state) {
             final isVerifying = state is AuthVerifying;
-            return Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 16),
-                  Text(
-                    'Код отправлен на ${widget.phoneNumber}',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(6, (i) {
-                      return SizedBox(
-                        width: 44,
-                        child: TextField(
-                          controller: _controllers[i],
-                          focusNode: _focusNodes[i],
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.center,
-                          maxLength: 1,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          decoration: const InputDecoration(
-                            counterText: '',
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (v) => _onChanged(i, v, context),
-                          enabled: !isVerifying,
-                        ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 16),
-                  if (isVerifying)
-                    const Center(child: CircularProgressIndicator())
-                  else
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+            return CustomScrollView(
+              slivers: [
+                // ─── Header ──────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextButton.icon(
-                          icon: const Icon(Icons.content_paste),
-                          label: const Text('Вставить'),
-                          onPressed: () => _pasteFromClipboard(context),
+                        // Back button
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: IconButton(
+                            onPressed: () => context.go('/phone'),
+                            icon: Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: scheme.onSurface,
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: 12),
-                        TextButton.icon(
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Отправить заново'),
-                          onPressed: () => _resend(context),
+                        const SizedBox(height: 8),
+                        // Icon
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                scheme.primary,
+                                scheme.primary.withOpacity(0.8),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: scheme.primary.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.pin_outlined,
+                            color: scheme.onPrimary,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Введите код',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text.rich(
+                          TextSpan(
+                            text: 'Код отправлен на ',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: widget.phoneNumber,
+                                style: TextStyle(
+                                  color: scheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                ],
-              ),
+                  ),
+                ),
+
+                // ─── Code Input ──────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(6, (i) {
+                        return SizedBox(
+                          width: 48,
+                          height: 56,
+                          child: TextField(
+                            controller: _controllers[i],
+                            focusNode: _focusNodes[i],
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            maxLength: 1,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            style: GoogleFonts.inter(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: scheme.onSurface,
+                            ),
+                            decoration: InputDecoration(
+                              counterText: '',
+                              filled: true,
+                              fillColor: _controllers[i].text.isNotEmpty
+                                  ? scheme.primaryContainer.withOpacity(0.3)
+                                  : scheme.surfaceContainerHighest
+                                      .withOpacity(0.3),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: scheme.primary,
+                                  width: 2,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: _controllers[i].text.isNotEmpty
+                                      ? scheme.primary.withOpacity(0.5)
+                                      : scheme.outline.withOpacity(0.3),
+                                ),
+                              ),
+                            ),
+                            onChanged: (v) => _onChanged(i, v, context),
+                            enabled: !isVerifying,
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+
+                // ─── Actions ─────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+                    child: Column(
+                      children: [
+                        if (isVerifying)
+                          Center(
+                            child: SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                color: scheme.primary,
+                              ),
+                            ),
+                          )
+                        else
+                          Column(
+                            children: [
+                              // Paste button
+                              SizedBox(
+                                width: double.infinity,
+                                height: 52,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _pasteFromClipboard(context),
+                                  icon: Icon(
+                                    Icons.content_paste_rounded,
+                                    color: scheme.primary,
+                                  ),
+                                  label: Text(
+                                    'Вставить из буфера',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: scheme.primary,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(
+                                      color: scheme.primary.withOpacity(0.5),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Resend button
+                              TextButton.icon(
+                                onPressed: () => _resend(context),
+                                icon: Icon(
+                                  Icons.refresh_rounded,
+                                  size: 20,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                                label: Text(
+                                  'Отправить код повторно',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w500,
+                                    color: scheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),

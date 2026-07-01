@@ -103,6 +103,7 @@ class DioClient {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
+      case DioExceptionType.transformTimeout:
         return 'Нет соединения с сервером';
       case DioExceptionType.badResponse:
         final code = e.response?.statusCode;

@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/text_size_provider.dart';
+import '../../../core/utils/theme_mode_provider.dart';
 import '../../../domain/repositories/auth_repository.dart';
 import '../../../domain/repositories/settings_repository.dart';
 import '../../blocs/settings/settings_bloc.dart';
@@ -47,6 +49,10 @@ class _SettingsView extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           final ready = state as SettingsReady;
+          // Sync textSize to global provider
+          TextSizeProvider.instance.textSize = ready.chat.textSize;
+          // Sync theme to global provider
+          ThemeModeProvider.instance.setFromSettings(ready.chat.theme);
           return ListView(
             children: [
               const _SectionTitle('Чат'),

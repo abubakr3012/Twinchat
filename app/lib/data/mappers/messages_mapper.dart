@@ -12,5 +12,6 @@ extension MessageDtoX on MessageDto {
         createdAt: createdAt,
         isEdited: isEdited,
         isDeleted: isDeleted,
+        readBy: readBy,
       );
 }

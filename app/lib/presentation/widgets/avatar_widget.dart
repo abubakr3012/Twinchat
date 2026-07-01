@@ -1,20 +1,25 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// Аватар пользователя / чата с фолбэком на инициалы.
-class AvatarWidget extends StatelessWidget {
-  const AvatarWidget({
+/// Аватар пользователя / чата с градиентом и инициалами.
+class UserAvatar extends StatelessWidget {
+  const UserAvatar({
     super.key,
     this.url,
     required this.name,
-    this.size = 48,
+    this.size = 56,
     this.onTap,
+    this.showOnline = false,
+    this.isOnline = false,
   });
 
   final String? url;
   final String name;
   final double size;
   final VoidCallback? onTap;
+  final bool showOnline;
+  final bool isOnline;
 
   String get _initials {
     final parts = name.trim().split(RegExp(r'\s+'));
@@ -23,42 +28,56 @@ class AvatarWidget extends StatelessWidget {
     return (parts.first[0] + parts.last[0]).toUpperCase();
   }
 
-  Color _seedColor(BuildContext context) {
+  List<Color> _gradientColors(BuildContext context) {
     final hash = name.codeUnits.fold<int>(0, (a, b) => a + b);
-    final colors = Theme.of(context).colorScheme.primary;
-    final palette = <Color>[
-      colors,
-      colors.withOpacity(0.7),
-      colors.withOpacity(0.5),
-      colors.withOpacity(0.85),
+    final scheme = Theme.of(context).colorScheme;
+    final palettes = [
+      [scheme.primary, scheme.primary.withOpacity(0.7)],
+      [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
+      [const Color(0xFFEC4899), const Color(0xFFF472B6)],
+      [const Color(0xFFF59E0B), const Color(0xFFFBBF24)],
+      [const Color(0xFF10B981), const Color(0xFF34D399)],
+      [const Color(0xFF3B82F6), const Color(0xFF60A5FA)],
     ];
-    return palette[hash % palette.length];
+    return palettes[hash % palettes.length];
   }
 
   @override
   Widget build(BuildContext context) {
-    final radius = size / 2;
+    final colors = _gradientColors(context);
     final placeholder = Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: _seedColor(context),
-        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(size * 0.35),
+        boxShadow: [
+          BoxShadow(
+            color: colors.first.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       alignment: Alignment.center,
       child: Text(
         _initials,
-        style: TextStyle(
+        style: GoogleFonts.inter(
           color: Colors.white,
-          fontSize: size * 0.4,
-          fontWeight: FontWeight.w600,
+          fontSize: size * 0.38,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
 
     final avatar = url == null || url!.isEmpty
         ? placeholder
-        : ClipOval(
+        : ClipRRect(
+            borderRadius: BorderRadius.circular(size * 0.35),
             child: CachedNetworkImage(
               imageUrl: url!,
               width: size,
@@ -69,11 +88,34 @@ class AvatarWidget extends StatelessWidget {
             ),
           );
 
-    if (onTap == null) return avatar;
-    return InkWell(
+    final result = showOnline
+        ? Stack(
+            children: [
+              avatar,
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: size * 0.25,
+                  height: size * 0.25,
+                  decoration: BoxDecoration(
+                    color: isOnline ? const Color(0xFF22C55E) : Colors.grey,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.surface,
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          )
+        : avatar;
+
+    if (onTap == null) return result;
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(radius),
-      child: avatar,
+      child: result,
     );
   }
 }
