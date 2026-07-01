@@ -120,8 +120,9 @@ def show_status():
 
 
 def print_success():
+    nginx_port = os.environ.get('NGINX_PORT', '89')
     print(
-        r"""
+        f"""
 ============================================
   TwinChat deployed successfully!
 ============================================
@@ -131,7 +132,7 @@ def print_success():
     - Redis         : localhost:6379
     - Django API    : localhost (via Nginx)
     - WebSocket     : ws://localhost/ws/
-    - Nginx         : localhost:80
+    - Nginx         : localhost:{nginx_port}
     - Static files  : served by Nginx
 
   Commands:
