@@ -31,7 +31,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context);
 
     return BlocProvider<ChatListBloc>(
@@ -39,137 +38,153 @@ class _ChatListScreenState extends State<ChatListScreen> {
         chatsRepository: GetIt.I<ChatsRepository>(),
         usersRepository: GetIt.I<UsersRepository>(),
       )..add(const ChatListLoad()),
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            l10n.appName,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: scheme.primary,
-            ),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.search_rounded),
-              tooltip: 'Поиск',
-              onPressed: () {},
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert_rounded),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+      child: Builder(
+        builder: (context) {
+          final scheme = Theme.of(context).colorScheme;
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(
+                l10n.appName,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.primary,
+                ),
               ),
-              onSelected: (value) {
-                switch (value) {
-                  case 'profile':
-                    context.go('/my-profile');
-                    break;
-                  case 'settings':
-                    context.go('/settings');
-                    break;
-                  case 'logout':
-                    _showLogoutDialog(context);
-                    break;
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'profile',
-                  child: Row(
-                    children: [
-                      Icon(Icons.person_outline_rounded,
-                          color: scheme.onSurface, size: 22),
-                      const SizedBox(width: 12),
-                       Text(l10n.myProfile),
-                    ],
-                  ),
+              elevation: 0,
+              backgroundColor: scheme.surface,
+              surfaceTintColor: Colors.transparent,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.search_rounded),
+                  tooltip: 'Поиск',
+                  onPressed: () {},
                 ),
-                PopupMenuItem(
-                  value: 'settings',
-                  child: Row(
-                    children: [
-                      Icon(Icons.settings_outlined,
-                          color: scheme.onSurface, size: 22),
-                      const SizedBox(width: 12),
-                      Text(l10n.settings),
-                    ],
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert_rounded),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-                const PopupMenuDivider(),
-                PopupMenuItem(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout_rounded,
-                          color: scheme.error, size: 22),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Выйти',
-                        style: TextStyle(color: scheme.error),
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'profile':
+                        context.go('/my-profile');
+                        break;
+                      case 'settings':
+                        context.go('/settings');
+                        break;
+                      case 'logout':
+                        _showLogoutDialog(context);
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'profile',
+                      child: Row(
+                        children: [
+                          Icon(Icons.person_outline_rounded,
+                              color: scheme.onSurface, size: 22),
+                          const SizedBox(width: 12),
+                           Text(l10n.myProfile),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    PopupMenuItem(
+                      value: 'settings',
+                      child: Row(
+                        children: [
+                          Icon(Icons.settings_outlined,
+                              color: scheme.onSurface, size: 22),
+                          const SizedBox(width: 12),
+                          Text(l10n.settings),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    PopupMenuItem(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          Icon(Icons.logout_rounded,
+                              color: scheme.error, size: 22),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Выйти',
+                            style: TextStyle(color: scheme.error),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-        body: IndexedStack(
-          index: _tab,
-          children: const [
-            _ChatsTab(),
-            _ContactsTab(),
-            _StoriesTab(),
-          ],
-        ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _tab,
-          onDestinationSelected: (i) => setState(() => _tab = i),
-          destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.chat_bubble_outline_rounded),
-              selectedIcon: const Icon(Icons.chat_bubble_rounded),
-              label: l10n.chats,
+            body: IndexedStack(
+              index: _tab,
+              children: const [
+                _ChatsTab(),
+                _ContactsTab(),
+                _StoriesTab(),
+              ],
             ),
-            NavigationDestination(
-              icon: const Icon(Icons.contacts_outlined),
-              selectedIcon: const Icon(Icons.contacts_rounded),
-              label: l10n.contacts,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.auto_stories_outlined),
-              selectedIcon: const Icon(Icons.auto_stories_rounded),
-              label: l10n.stories,
-            ),
-          ],
-        ),
-        floatingActionButton: _tab == 0
-            ? FloatingActionButton.extended(
-                onPressed: () => _showCreateChat(context),
-                icon: const Icon(Icons.edit_rounded, size: 20),
-                label: Text(
-                  l10n.newChat,
-                  style: TextStyle(fontWeight: FontWeight.w600),
+            bottomNavigationBar: NavigationBar(
+              selectedIndex: _tab,
+              onDestinationSelected: (i) => setState(() => _tab = i),
+              destinations: [
+                NavigationDestination(
+                  icon: const Icon(Icons.chat_bubble_outline_rounded),
+                  selectedIcon: const Icon(Icons.chat_bubble_rounded),
+                  label: l10n.chats,
                 ),
-                backgroundColor: scheme.primary,
-                foregroundColor: scheme.onPrimary,
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                NavigationDestination(
+                  icon: const Icon(Icons.contacts_outlined),
+                  selectedIcon: const Icon(Icons.contacts_rounded),
+                  label: l10n.contacts,
                 ),
-              )
-            : (_tab == 1
-                ? FloatingActionButton(
-                    onPressed: () => context.push('/contacts'),
+                NavigationDestination(
+                  icon: const Icon(Icons.auto_stories_outlined),
+                  selectedIcon: const Icon(Icons.auto_stories_rounded),
+                  label: l10n.stories,
+                ),
+              ],
+            ),
+            floatingActionButton: _tab == 0
+                ? FloatingActionButton.extended(
+                    onPressed: () => _showCreateChat(context),
+                    icon: const Icon(Icons.edit_rounded, size: 20),
+                    label: Text(
+                      l10n.newChat,
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     backgroundColor: scheme.primary,
                     foregroundColor: scheme.onPrimary,
+                    elevation: 4,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(Icons.person_add_rounded),
                   )
-                : null),
+                : (_tab == 1
+                    ? FloatingActionButton(
+                        onPressed: () => context.push('/contacts'),
+                        backgroundColor: scheme.primary,
+                        foregroundColor: scheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(Icons.person_add_rounded),
+                      )
+                    : FloatingActionButton(
+                        onPressed: () => context.push('/stories'),
+                        backgroundColor: scheme.primary,
+                        foregroundColor: scheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(Icons.add_a_photo_outlined),
+                      )),
+          );
+        },
       ),
     );
   }
@@ -895,6 +910,12 @@ class _StoriesTab extends StatelessWidget {
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () => context.push('/stories'),
+                    icon: const Icon(Icons.add_a_photo_outlined),
+                    label: Text(l10n.addStory),
                   ),
                 ],
               ),

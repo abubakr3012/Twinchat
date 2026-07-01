@@ -532,8 +532,10 @@ class _ChatViewState extends State<_ChatView> {
             }
             final ready = state as ChatReady;
             final typing = ready.typingUsers.values.toList();
+            final isDark = theme.brightness == Brightness.dark;
+            final chatBgColor = isDark ? const Color(0xFF0B141A) : const Color(0xFFEFEAE2);
             return Container(
-              color: scheme.surfaceContainerLow.withOpacity(0.5),
+              color: chatBgColor,
               child: Column(
                 children: [
                   Expanded(
@@ -576,11 +578,12 @@ class _ChatViewState extends State<_ChatView> {
                           )
                         : ListView.builder(
                             controller: _scroll,
+                            reverse: true,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 8),
                             itemCount: ready.messages.length,
                             itemBuilder: (_, i) {
-                              final m = ready.messages[i];
+                              final m = ready.messages[ready.messages.length - 1 - i];
                               return _MessageBubble(
                                 message: m,
                                 isMine: m.senderId == ready.currentUserId,
@@ -661,11 +664,19 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final color = isMine
-        ? scheme.primary
-        : scheme.surfaceContainerHighest;
-    final onColor = isMine ? scheme.onPrimary : scheme.onSurface;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    
+    final Color color;
+    final Color onColor;
+    if (isMine) {
+      color = isDark ? const Color(0xFF005C4B) : const Color(0xFFE2F9C2);
+      onColor = isDark ? Colors.white : const Color(0xFF303030);
+    } else {
+      color = isDark ? const Color(0xFF202C33) : const Color(0xFFFFFFFF);
+      onColor = isDark ? Colors.white : const Color(0xFF303030);
+    }
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -698,15 +709,15 @@ class _MessageBubble extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(18),
-                    topRight: const Radius.circular(18),
-                    bottomLeft: Radius.circular(isMine ? 18 : 4),
-                    bottomRight: Radius.circular(isMine ? 4 : 18),
+                    topLeft: const Radius.circular(12),
+                    topRight: const Radius.circular(12),
+                    bottomLeft: Radius.circular(isMine ? 12 : 0),
+                    bottomRight: Radius.circular(isMine ? 0 : 12),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 2,
                       offset: const Offset(0, 1),
                     ),
                   ],
