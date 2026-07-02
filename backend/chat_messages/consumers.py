@@ -162,6 +162,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def check_membership(self):
+        if not self.user.is_authenticated:
+            return False
         return ChatMember.objects.filter(
             chat_id=self.chat_id,
             user=self.user

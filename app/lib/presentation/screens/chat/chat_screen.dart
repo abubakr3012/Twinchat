@@ -597,7 +597,7 @@ class _ChatViewState extends State<_ChatView> {
                                 horizontal: 12, vertical: 8),
                             itemCount: ready.messages.length,
                             itemBuilder: (_, i) {
-                              final m = ready.messages[ready.messages.length - 1 - i];
+                              final m = ready.messages[i];
                               return _MessageBubble(
                                 message: m,
                                 isMine: m.senderId == ready.currentUserId,
@@ -685,11 +685,11 @@ class _MessageBubble extends StatelessWidget {
     final Color color;
     final Color onColor;
     if (isMine) {
-      color = isDark ? const Color(0xFF005C4B) : const Color(0xFFE2F9C2);
-      onColor = isDark ? Colors.white : const Color(0xFF303030);
+      color = isDark ? const Color(0xFF0A84FF) : const Color(0xFF007AFF);
+      onColor = Colors.white;
     } else {
-      color = isDark ? const Color(0xFF202C33) : const Color(0xFFFFFFFF);
-      onColor = isDark ? Colors.white : const Color(0xFF303030);
+      color = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA);
+      onColor = isDark ? Colors.white : Colors.black87;
     }
 
     return Container(
@@ -719,20 +719,20 @@ class _MessageBubble extends StatelessWidget {
                 ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                    horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(12),
-                    topRight: const Radius.circular(12),
-                    bottomLeft: Radius.circular(isMine ? 12 : 0),
-                    bottomRight: Radius.circular(isMine ? 0 : 12),
+                    topLeft: const Radius.circular(20),
+                    topRight: const Radius.circular(20),
+                    bottomLeft: Radius.circular(isMine ? 20 : 4),
+                    bottomRight: Radius.circular(isMine ? 4 : 20),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 2,
-                      offset: const Offset(0, 1),
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),

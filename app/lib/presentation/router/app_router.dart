@@ -42,6 +42,8 @@ class AppRouter {
       final loc = state.matchedLocation;
       final isAuthRoute =
           loc == '/phone' || loc == '/code' || loc == '/login' || loc == '/register';
+      
+      if (loc == '/') return loggedIn ? '/chats' : '/phone';
       if (!loggedIn && !isAuthRoute) return '/phone';
       if (loggedIn && isAuthRoute) return '/chats';
       return null;
