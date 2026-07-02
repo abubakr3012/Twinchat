@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/l10n/app_localizations.dart';
+import 'core/l10n/fallback_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/locale_provider.dart';
 import 'core/utils/theme_mode_provider.dart';
@@ -23,6 +24,7 @@ Future<void> main() async {
   HttpOverrides.global = MyHttpOverrides();
   await configureDependencies();
   await ThemeModeProvider.instance.init();
+  await LocaleProvider.instance.init();
 
   runApp(const TwinChatApp());
 }
@@ -70,9 +72,9 @@ class _TwinChatAppState extends State<TwinChatApp> {
       routerConfig: router.config,
       localizationsDelegates: const [
         AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        FallbackMaterialLocalizationsDelegate(),
+        FallbackWidgetsLocalizationsDelegate(),
+        FallbackCupertinoLocalizationsDelegate(),
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       locale: LocaleProvider.instance.locale,

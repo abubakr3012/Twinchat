@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 
@@ -15,7 +16,13 @@ class LocaleProvider extends ChangeNotifier {
   String get languageCode => _locale.languageCode;
 
   /// Set locale from settings string ('ru', 'en', 'tg').
-  void setFromSettings(String value) {
+  Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLocale = prefs.getString('language_code') ?? 'ru';
+    setFromSettings(savedLocale, saveToPrefs: false);
+  }
+
+  void setFromSettings(String value, {bool saveToPrefs = true}) {
     Locale newLocale;
     switch (value) {
       case 'en':
@@ -32,6 +39,11 @@ class LocaleProvider extends ChangeNotifier {
     if (newLocale != _locale) {
       _locale = newLocale;
       notifyListeners();
+    }
+    if (saveToPrefs) {
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setString('language_code', value);
+      });
     }
   }
 
