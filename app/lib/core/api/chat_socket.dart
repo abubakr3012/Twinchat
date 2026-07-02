@@ -125,6 +125,7 @@ class SocketEvent {
   final Map<String, dynamic> payload;
 
   static const message = 'message';
+  static const edit = 'edit';
   static const typing = 'typing';
   static const read = 'read';
   static const online = 'online';

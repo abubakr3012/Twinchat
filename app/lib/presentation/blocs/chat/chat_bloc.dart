@@ -393,6 +393,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           username: p['username'] as String? ?? '',
           isTyping: p['is_typing'] as bool? ?? false,
         ));
+      } else if (ev.type == SocketEvent.edit) {
+        final p = ev.payload;
+        final mid = (p['message_id'] as num?)?.toInt();
+        final content = p['content'] as String?;
+        if (mid != null && content != null && state is ChatReady) {
+           final ready = state as ChatReady;
+           final msg = ready.messages.firstWhere((m) => m.id == mid, orElse: () => ready.messages.first);
+           if (msg.id == mid) {
+             add(_ChatReplaceMessage(msg.copyWith(content: content, isEdited: true)));
+           }
+        }
       } else if (ev.type == SocketEvent.read) {
         final p = ev.payload;
         final mid = (p['message_id'] as num?)?.toInt() ?? 0;
