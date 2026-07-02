@@ -1,5 +1,7 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 from .models import Message
 from .serializers import MessageSerializer
@@ -19,22 +21,33 @@ class MessageListCreateView(
 
 
     def get_queryset(self):
-
         chat_id = self.kwargs['chat_id']
-
         return Message.objects.filter(
             chat_id=chat_id
         ).order_by('-created_at')
-
 
     def perform_create(
         self,
         serializer
     ):
 
-        serializer.save(
+        message = serializer.save(
             sender=self.request.user,
             chat_id=self.kwargs['chat_id']
+        )
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{message.chat_id}',
+            {
+                'type': 'chat_message',
+                'message_id': message.id,
+                'content': message.content,
+                'message_type': message.message_type,
+                'sender_id': message.sender.id,
+                'sender_username': message.sender.username,
+                'sent_at': message.created_at.isoformat(),
+                'read_by': [u.id for u in message.read_by.all()],
+            }
         )
 
 

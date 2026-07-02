@@ -65,24 +65,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 
     async def handle_message(self, data):
-        content = data.get('content', '')
-        message_type = data.get('message_type', 'text')
-
-        message = await self.save_message(content, message_type)
-
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message_id': message.id,
-                'content': content,
-                'message_type': message_type,
-                'sender_id': self.user.id,
-                'sender_username': self.user.username,
-                'sent_at': message.created_at.isoformat(),
-                'read_by': [u.id for u in message.read_by.all()],
-            }
-        )
+        # We no longer process message sending via WebSockets to avoid duplicates.
+        # Messages are now sent via HTTP and broadcasted to the group by the view.
+        pass
 
     async def handle_typing(self, data):
         is_typing = data.get('is_typing', False)
