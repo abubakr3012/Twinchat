@@ -22,6 +22,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = MyHttpOverrides();
   await configureDependencies();
+  await ThemeModeProvider.instance.init();
 
   runApp(const TwinChatApp());
 }

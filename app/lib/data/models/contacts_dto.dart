@@ -20,6 +20,7 @@ class ContactDto {
                 ? (json['contact']['username'] as String? ?? '')
                 : ''),
         nickname: json['nickname'] as String?,
+        contactAvatar: json['contact_avatar'] as String?,
         isBlocked: json['is_blocked'] as bool? ?? false,
         addedAt: json['added_at'] != null
             ? DateTime.tryParse(json['added_at'] as String)
@@ -29,6 +30,7 @@ class ContactDto {
   final int id;
   final int contactId;
   final String contactUsername;
+  final String? contactAvatar;
   final String? nickname;
   final bool isBlocked;
   final DateTime? addedAt;

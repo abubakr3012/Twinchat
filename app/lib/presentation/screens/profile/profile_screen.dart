@@ -116,12 +116,17 @@ class _ProfileView extends StatelessWidget {
               Center(
                 child: CircleAvatar(
                   radius: 56,
-                  child: Text(
-                    user.username.isEmpty
-                        ? '?'
-                        : user.username.characters.first.toUpperCase(),
-                    style: const TextStyle(fontSize: 36),
-                  ),
+                  backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                      ? NetworkImage(user.avatarUrl!)
+                      : null,
+                  child: user.avatarUrl == null || user.avatarUrl!.isEmpty
+                      ? Text(
+                          user.username.isEmpty
+                              ? '?'
+                              : user.username.characters.first.toUpperCase(),
+                          style: const TextStyle(fontSize: 36),
+                        )
+                      : null,
                 ),
               ),
               const SizedBox(height: 12),

@@ -7,6 +7,7 @@ extension MessageDtoX on MessageDto {
         chatId: chatId,
         senderId: senderId,
         senderUsername: senderUsername,
+        senderAvatarUrl: senderAvatar,
         content: content,
         messageType: messageTypeFromString(messageType),
         createdAt: createdAt,

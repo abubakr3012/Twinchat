@@ -6,6 +6,7 @@ class Contact extends Equatable {
     required this.id,
     required this.contactId,
     required this.username,
+    this.avatarUrl,
     this.nickname,
     this.isBlocked = false,
     this.addedAt,
@@ -14,6 +15,7 @@ class Contact extends Equatable {
   final int id;
   final int contactId;
   final String username;
+  final String? avatarUrl;
   final String? nickname;
   final bool isBlocked;
   final DateTime? addedAt;
@@ -24,5 +26,5 @@ class Contact extends Equatable {
 
   @override
   List<Object?> get props =>
-      [id, contactId, username, nickname, isBlocked, addedAt];
+      [id, contactId, username, avatarUrl, nickname, isBlocked, addedAt];
 }

@@ -6,6 +6,7 @@ extension ContactDtoX on ContactDto {
         id: id,
         contactId: contactId,
         username: contactUsername,
+        avatarUrl: contactAvatar,
         nickname: nickname,
         isBlocked: isBlocked,
         addedAt: addedAt,

@@ -20,16 +20,18 @@ class ChatMember extends Equatable {
     required this.id,
     required this.userId,
     required this.username,
+    this.avatarUrl,
     this.isAdmin = false,
   });
 
   final int id;
   final int userId;
   final String username;
+  final String? avatarUrl;
   final bool isAdmin;
 
   @override
-  List<Object?> get props => [id, userId, username, isAdmin];
+  List<Object?> get props => [id, userId, username, avatarUrl, isAdmin];
 }
 
 /// Доменная сущность чата.

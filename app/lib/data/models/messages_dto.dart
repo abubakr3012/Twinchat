@@ -17,6 +17,7 @@ class MessageDto {
         chatId: (json['chat'] as num).toInt(),
         senderId: (json['sender'] as num).toInt(),
         senderUsername: json['sender_username'] as String? ?? '',
+        senderAvatar: json['sender_avatar'] as String?,
         content: json['content'] as String? ?? '',
         messageType: json['message_type'] as String? ?? 'text',
         createdAt: json['created_at'] != null
@@ -34,6 +35,7 @@ class MessageDto {
   final int chatId;
   final int senderId;
   final String senderUsername;
+  final String? senderAvatar;
   final String content;
   final String messageType;
   final DateTime createdAt;

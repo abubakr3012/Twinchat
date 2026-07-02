@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 /// Глобальный провайдер темы приложения.
 /// Синхронизируется с настройками и применяется к MaterialApp.
 class ThemeModeProvider extends ChangeNotifier {
@@ -21,7 +23,13 @@ class ThemeModeProvider extends ChangeNotifier {
     }
   }
 
-  void setFromSettings(String value) {
+  Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedTheme = prefs.getString('theme_mode') ?? 'system';
+    setFromSettings(savedTheme, saveToPrefs: false);
+  }
+
+  void setFromSettings(String value, {bool saveToPrefs = true}) {
     switch (value) {
       case 'light':
         _themeMode = ThemeMode.light;
@@ -35,5 +43,10 @@ class ThemeModeProvider extends ChangeNotifier {
         break;
     }
     notifyListeners();
+    if (saveToPrefs) {
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setString('theme_mode', value);
+      });
+    }
   }
 }

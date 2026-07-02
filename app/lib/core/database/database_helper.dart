@@ -20,8 +20,14 @@ class DatabaseHelper {
     final path = p.join(dbPath, 'twinchat.db');
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        await db.execute('DROP TABLE IF EXISTS messages');
+        await db.execute('DROP TABLE IF EXISTS chats');
+        await db.execute('DROP TABLE IF EXISTS settings');
+        await _onCreate(db, newVersion);
+      },
     );
   }
 
@@ -32,6 +38,7 @@ class DatabaseHelper {
         chat_id INTEGER NOT NULL,
         sender_id INTEGER NOT NULL,
         sender_username TEXT NOT NULL DEFAULT '',
+        sender_avatar TEXT,
         content TEXT NOT NULL DEFAULT '',
         message_type TEXT NOT NULL DEFAULT 'text',
         created_at TEXT NOT NULL,

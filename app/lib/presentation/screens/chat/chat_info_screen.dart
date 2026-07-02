@@ -209,7 +209,12 @@ class _ChatInfoScreenState extends State<ChatInfoScreen> {
                       ),
                     ..._chat!.members.map((m) => ListTile(
                           leading: CircleAvatar(
-                            child: Text(m.username.isNotEmpty ? m.username[0].toUpperCase() : '?'),
+                            backgroundImage: m.avatarUrl != null && m.avatarUrl!.isNotEmpty
+                                ? NetworkImage(m.avatarUrl!)
+                                : null,
+                            child: m.avatarUrl == null || m.avatarUrl!.isEmpty
+                                ? Text(m.username.isNotEmpty ? m.username[0].toUpperCase() : '?')
+                                : null,
                           ),
                           title: Text(m.username),
                           subtitle: Text(m.isAdmin ? 'Admin' : 'Member'),

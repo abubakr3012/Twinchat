@@ -29,6 +29,7 @@ class Message extends Equatable {
     required this.chatId,
     required this.senderId,
     required this.senderUsername,
+    this.senderAvatarUrl,
     required this.content,
     required this.messageType,
     required this.createdAt,
@@ -41,6 +42,7 @@ class Message extends Equatable {
   final int chatId;
   final int senderId;
   final String senderUsername;
+  final String? senderAvatarUrl;
   final String content;
   final MessageType messageType;
   final DateTime createdAt;
@@ -60,6 +62,7 @@ class Message extends Equatable {
       chatId: chatId,
       senderId: senderId,
       senderUsername: senderUsername,
+      senderAvatarUrl: senderAvatarUrl,
       content: content ?? this.content,
       messageType: messageType,
       createdAt: createdAt,
@@ -75,6 +78,7 @@ class Message extends Equatable {
         chatId,
         senderId,
         senderUsername,
+        senderAvatarUrl,
         content,
         messageType,
         createdAt,

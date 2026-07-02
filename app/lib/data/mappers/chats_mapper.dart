@@ -6,6 +6,7 @@ extension ChatMemberDtoX on ChatMemberDto {
         id: id,
         userId: userId,
         username: username,
+        avatarUrl: avatar,
         isAdmin: isAdmin,
       );
 }

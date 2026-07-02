@@ -85,6 +85,7 @@ class ChatsRepositoryImpl implements ChatsRepository {
                   'id': m.id,
                   'user': m.userId,
                   'username': m.username,
+                  'avatar_url': m.avatarUrl,
                   'is_admin': m.isAdmin,
                 })
             .toList()),
@@ -98,6 +99,7 @@ class ChatsRepositoryImpl implements ChatsRepository {
               id: (m['id'] as num?)?.toInt() ?? 0,
               userId: (m['user'] as num?)?.toInt() ?? 0,
               username: m['username'] as String? ?? '',
+              avatarUrl: m['avatar_url'] as String?,
               isAdmin: m['is_admin'] as bool? ?? false,
             ))
         .toList();

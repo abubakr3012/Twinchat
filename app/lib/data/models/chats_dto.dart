@@ -3,6 +3,7 @@ class ChatMemberDto {
     required this.id,
     required this.userId,
     required this.username,
+    this.avatar,
     this.isAdmin = false,
   });
 
@@ -10,12 +11,14 @@ class ChatMemberDto {
         id: (json['id'] as num).toInt(),
         userId: (json['user'] as num).toInt(),
         username: json['username'] as String? ?? '',
+        avatar: json['avatar'] as String?,
         isAdmin: json['is_admin'] as bool? ?? false,
       );
 
   final int id;
   final int userId;
   final String username;
+  final String? avatar;
   final bool isAdmin;
 }
 

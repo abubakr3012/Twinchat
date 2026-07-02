@@ -284,11 +284,16 @@ class _ContactTile extends StatelessWidget {
       },
       child: ListTile(
         leading: CircleAvatar(
-          child: Text(
-            contact.displayName.isEmpty
-                ? '?'
-                : contact.displayName.characters.first.toUpperCase(),
-          ),
+          backgroundImage: contact.avatarUrl != null && contact.avatarUrl!.isNotEmpty
+              ? NetworkImage(contact.avatarUrl!)
+              : null,
+          child: contact.avatarUrl == null || contact.avatarUrl!.isEmpty
+              ? Text(
+                  contact.displayName.isEmpty
+                      ? '?'
+                      : contact.displayName.characters.first.toUpperCase(),
+                )
+              : null,
         ),
         title: Text(contact.displayName),
         subtitle: Text('@${contact.username}'),
