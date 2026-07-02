@@ -520,9 +520,11 @@ class _ChatViewState extends State<_ChatView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final scheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0B141A) : const Color(0xFFEFE6DD),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),

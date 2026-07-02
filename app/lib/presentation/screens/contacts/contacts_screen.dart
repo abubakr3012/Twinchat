@@ -145,6 +145,9 @@ class _ContactsViewState extends State<_ContactsView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.contacts),
@@ -209,11 +212,11 @@ class _ContactsViewState extends State<_ContactsView> {
                             .read<ContactsBloc>()
                             .add(const ContactsLoad()),
                         child: ListView.separated(
-                          itemCount: filtered.length,
+                          itemCount: ready.contacts.length,
                           separatorBuilder: (_, __) =>
                               const Divider(height: 1),
                           itemBuilder: (_, i) {
-                            final c = filtered[i];
+                            final c = ready.contacts[i];
                             return _ContactTile(
                               contact: c,
                               onTap: () {
