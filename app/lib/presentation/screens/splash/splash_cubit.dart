@@ -24,7 +24,14 @@ class SplashCubit extends Cubit<void> {
   final GlobalKey<NavigatorState> _navigatorKey;
 
   Future<void> checkToken() async {
-    final loggedIn = await _storage.hasAccess();
+    bool loggedIn = false;
+    try {
+      loggedIn = await _storage.hasAccess();
+    } catch (e) {
+      // In case flutter_secure_storage throws on restart
+      loggedIn = false;
+    }
+    
     // Give the widget tree time to mount before navigating
     await Future<void>.delayed(const Duration(milliseconds: 600));
     if (isClosed) return;

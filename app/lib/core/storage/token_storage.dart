@@ -22,8 +22,13 @@ class TokenStorage {
   Future<String?> readRefresh() => _storage.read(key: _refreshKey);
 
   Future<bool> hasAccess() async {
-    final v = await _storage.read(key: _accessKey);
-    return v != null && v.isNotEmpty;
+    try {
+      final v = await _storage.read(key: _accessKey);
+      return v != null && v.isNotEmpty;
+    } catch (e) {
+      // Return false instead of crashing the router if secure storage fails
+      return false;
+    }
   }
 
   Future<void> clear() async {

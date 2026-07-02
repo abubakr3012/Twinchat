@@ -3,9 +3,9 @@ class ApiConstants {
   ApiConstants._();
 
   /// Web: localhost; Android-эмулятор: 10.0.2.2; Physical device: IP компьютера.
-  static const String baseUrl = 'https://171.22.174.50:89/api/';
+  static const String baseUrl = 'https://abubakr.softclub.win/api/';
 
-  static String get wsBase => 'wss://171.22.174.50:89/ws/chat/';
+  static String get wsBase => 'wss://abubakr.softclub.win/ws/chat/';
 
   static String chatSocket(int chatId) => '$wsBase$chatId/';
 
