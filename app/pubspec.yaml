@@ -64,7 +64,7 @@ dependencies:
 
   # Crypto: Curve25519 (X25519) + AES-256-GCM
   cryptography: ^2.7.0
-  image_gallery_saver: ^2.0.3
+  gal: ^2.3.2
 
 
 dev_dependencies:

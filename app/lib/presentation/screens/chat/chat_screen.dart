@@ -8,7 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -346,20 +346,15 @@ class _ChatViewState extends State<_ChatView> {
                       SnackBar(content: Text('Downloading...')),
                     );
                     var response = await Dio().get(url, options: Options(responseType: ResponseType.bytes));
-                    final result = await ImageGallerySaver.saveImage(
-                      Uint8List.fromList(response.data),
-                      quality: 100,
-                      name: "twinchat_${DateTime.now().millisecondsSinceEpoch}",
+                    final tempDir = await getTemporaryDirectory();
+                    final tempFile = File('${tempDir.path}/twinchat_${DateTime.now().millisecondsSinceEpoch}.jpg');
+                    await tempFile.writeAsBytes(response.data);
+                    
+                    await Gal.putImage(tempFile.path);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Saved to Gallery')),
                     );
-                    if (result['isSuccess'] == true) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Saved to Gallery')),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to save to Gallery')),
-                      );
-                    }
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Error: $e')),
