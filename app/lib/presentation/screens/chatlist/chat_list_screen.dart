@@ -56,8 +56,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   ? TextField(
                       controller: _searchController,
                       autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: l10n.search,
+                      decoration: const InputDecoration(
+                        hintText: 'Поиск',
                         border: InputBorder.none,
                         focusedBorder: InputBorder.none,
                         enabledBorder: InputBorder.none,

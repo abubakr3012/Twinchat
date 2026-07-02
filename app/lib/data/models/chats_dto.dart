@@ -27,6 +27,7 @@ class ChatDto {
     this.avatar,
     this.members = const <ChatMemberDto>[],
     this.createdAt,
+    this.lastMessage,
   });
 
   factory ChatDto.fromJson(Map<String, dynamic> json) => ChatDto(
