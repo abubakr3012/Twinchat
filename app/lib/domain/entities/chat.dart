@@ -41,6 +41,7 @@ class Chat extends Equatable {
     this.avatarUrl,
     this.members = const <ChatMember>[],
     this.createdAt,
+    this.lastMessage,
   });
 
   final int id;
@@ -49,6 +50,7 @@ class Chat extends Equatable {
   final String? avatarUrl;
   final List<ChatMember> members;
   final DateTime? createdAt;
+  final String? lastMessage;
 
   /// Имя для отображения: для личных — никнейм собеседника, иначе name.
   String displayName(String currentUsername) {
@@ -67,5 +69,5 @@ class Chat extends Equatable {
   String? displayAvatar() => avatarUrl;
 
   @override
-  List<Object?> get props => [id, type, name, avatarUrl, members, createdAt];
+  List<Object?> get props => [id, type, name, avatarUrl, members, createdAt, lastMessage];
 }

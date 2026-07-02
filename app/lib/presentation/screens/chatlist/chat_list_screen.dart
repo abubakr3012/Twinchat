@@ -28,6 +28,14 @@ class ChatListScreen extends StatefulWidget {
 
 class _ChatListScreenState extends State<ChatListScreen> {
   int _tab = 0;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,22 +52,47 @@ class _ChatListScreenState extends State<ChatListScreen> {
           final scheme = Theme.of(context).colorScheme;
           return Scaffold(
             appBar: AppBar(
-              title: Text(
-                l10n.appName,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.primary,
-                ),
-              ),
+              title: _isSearching
+                  ? TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: l10n.search,
+                        border: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                      ),
+                      onChanged: (val) {
+                        setState(() {});
+                      },
+                    )
+                  : Text(
+                      l10n.appName,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: scheme.primary,
+                      ),
+                    ),
               elevation: 0,
               backgroundColor: scheme.surface,
               surfaceTintColor: Colors.transparent,
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.search_rounded),
+                  icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
                   tooltip: 'Поиск',
-                  onPressed: () {},
+                  onPressed: () {
+                    setState(() {
+                      if (_isSearching) {
+                        _isSearching = false;
+                        _searchController.clear();
+                      } else {
+                        _isSearching = true;
+                      }
+                    });
+                  },
                 ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert_rounded),
@@ -123,10 +156,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
             ),
             body: IndexedStack(
               index: _tab,
-              children: const [
-                _ChatsTab(),
-                _ContactsTab(),
-                _StoriesTab(),
+              children: [
+                _ChatsTab(searchQuery: _searchController.text),
+                _ContactsTab(searchQuery: _searchController.text),
+                _StoriesTab(searchQuery: _searchController.text),
               ],
             ),
             bottomNavigationBar: NavigationBar(
@@ -242,7 +275,8 @@ void _showGroupSettings(BuildContext context, Chat chat) {
 }
 
 class _ChatsTab extends StatelessWidget {
-  const _ChatsTab();
+  const _ChatsTab({required this.searchQuery});
+  final String searchQuery;
 
   @override
   Widget build(BuildContext context) {
@@ -364,9 +398,16 @@ class _ChatsTab extends StatelessWidget {
           },
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: ready.chats.length,
+            itemCount: ready.chats.where((c) {
+              if (searchQuery.isEmpty) return true;
+              return c.displayName(ready.me.username).toLowerCase().contains(searchQuery.toLowerCase());
+            }).length,
             itemBuilder: (_, i) {
-              final chat = ready.chats[i];
+              final filteredChats = ready.chats.where((c) {
+                if (searchQuery.isEmpty) return true;
+                return c.displayName(ready.me.username).toLowerCase().contains(searchQuery.toLowerCase());
+              }).toList();
+              final chat = filteredChats[i];
               final name = chat.displayName(ready.me.username);
               return _ChatListItem(
                 chat: chat,
@@ -465,7 +506,7 @@ class _ChatListItem extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _chatTypeLabel(chat.type, l10n),
+                        chat.lastMessage ?? _chatTypeLabel(chat.type, l10n),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                         ),
@@ -804,7 +845,8 @@ class _GroupSettingsDialog extends StatelessWidget {
 // ─── Stub tabs ──────────────────────────────────────────────────────
 
 class _ContactsTab extends StatefulWidget {
-  const _ContactsTab();
+  const _ContactsTab({required this.searchQuery});
+  final String searchQuery;
 
   @override
   State<_ContactsTab> createState() => _ContactsTabState();
@@ -981,9 +1023,18 @@ class _ContactsTabState extends State<_ContactsTab> {
                             context.read<ContactsBloc>().add(const ContactsLoad()),
                         child: ListView.builder(
                           padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: ready.contacts.length,
+                          itemCount: ready.contacts.where((c) {
+                            if (widget.searchQuery.isEmpty) return true;
+                            return c.displayName.toLowerCase().contains(widget.searchQuery.toLowerCase()) || 
+                                   c.username.toLowerCase().contains(widget.searchQuery.toLowerCase());
+                          }).length,
                           itemBuilder: (_, i) {
-                            final c = ready.contacts[i];
+                            final filteredContacts = ready.contacts.where((c) {
+                              if (widget.searchQuery.isEmpty) return true;
+                              return c.displayName.toLowerCase().contains(widget.searchQuery.toLowerCase()) || 
+                                     c.username.toLowerCase().contains(widget.searchQuery.toLowerCase());
+                            }).toList();
+                            final c = filteredContacts[i];
                             return ListTile(
                               leading: CircleAvatar(
                                 backgroundColor: scheme.primaryContainer,
@@ -1023,7 +1074,8 @@ class _ContactsTabState extends State<_ContactsTab> {
 }
 
 class _StoriesTab extends StatelessWidget {
-  const _StoriesTab();
+  const _StoriesTab({required this.searchQuery});
+  final String searchQuery;
 
   @override
   Widget build(BuildContext context) {
@@ -1072,7 +1124,11 @@ class _StoriesTab extends StatelessWidget {
               ),
             );
           }
-          final allStories = [...ready.feed];
+          final allStories = ready.feed.where((s) {
+            if (searchQuery.isEmpty) return true;
+            return s.username.toLowerCase().contains(searchQuery.toLowerCase());
+          }).toList();
+
           return RefreshIndicator(
             onRefresh: () async =>
                 context.read<StoriesBloc>().add(const StoriesLoad()),

@@ -18,5 +18,6 @@ extension ChatDtoX on ChatDto {
         avatarUrl: avatar,
         members: members.map((m) => m.toDomain()).toList(),
         createdAt: createdAt,
+        lastMessage: lastMessage,
       );
 }

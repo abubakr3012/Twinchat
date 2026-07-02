@@ -41,6 +41,7 @@ class ChatDto {
         createdAt: json['created_at'] != null
             ? DateTime.tryParse(json['created_at'] as String)
             : null,
+        lastMessage: json['last_message']?['content'] as String?,
       );
 
   final int id;
@@ -49,4 +50,5 @@ class ChatDto {
   final String? avatar;
   final List<ChatMemberDto> members;
   final DateTime? createdAt;
+  final String? lastMessage;
 }

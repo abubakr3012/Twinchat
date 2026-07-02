@@ -108,6 +108,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'read_by': event.get('read_by', []),
         }))
 
+    async def chat_message_edit(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'edit',
+            'message_id': event['message_id'],
+            'content': event['content'],
+        }))
+
     async def typing_status(self, event):
         if event['user_id'] == self.user.id:
             return

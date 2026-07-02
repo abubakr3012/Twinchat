@@ -22,7 +22,7 @@ dependencies:
   go_router: ^14.0.0
 
   # Network
-  dio: ^5.4.3
+  dio: ^5.10.0
   web_socket_channel: ^3.0.0
 
   # Dependency injection
@@ -64,6 +64,7 @@ dependencies:
 
   # Crypto: Curve25519 (X25519) + AES-256-GCM
   cryptography: ^2.7.0
+  image_gallery_saver: ^2.0.3
 
 
 dev_dependencies:

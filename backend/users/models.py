@@ -8,8 +8,8 @@ class User(AbstractUser):
         unique=True
     )
 
-    avatar = models.ImageField(
-        upload_to='avatars/',
+    avatar = models.URLField(
+        max_length=1000,
         null=True,
         blank=True
     )

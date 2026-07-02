@@ -21,8 +21,8 @@ class Chat(models.Model):
         blank=True
     )
 
-    avatar = models.ImageField(
-        upload_to='media/chat_avatars/',
+    avatar = models.URLField(
+        max_length=1000,
         null=True,
         blank=True
     )

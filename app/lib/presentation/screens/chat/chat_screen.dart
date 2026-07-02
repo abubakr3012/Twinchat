@@ -1,7 +1,14 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -329,6 +336,43 @@ class _ChatViewState extends State<_ChatView> {
               ),
             Positioned(
               top: 16,
+              right: 64, // moved left to make room for download
+              child: IconButton(
+                icon: const Icon(Icons.download_rounded,
+                    color: Colors.white, size: 28),
+                onPressed: () async {
+                  try {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Downloading...')),
+                    );
+                    var response = await Dio().get(url, options: Options(responseType: ResponseType.bytes));
+                    final result = await ImageGallerySaver.saveImage(
+                      Uint8List.fromList(response.data),
+                      quality: 100,
+                      name: "twinchat_${DateTime.now().millisecondsSinceEpoch}",
+                    );
+                    if (result['isSuccess'] == true) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Saved to Gallery')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to save to Gallery')),
+                      );
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                },
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withOpacity(0.5),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 16,
               right: 16,
               child: IconButton(
                 icon: const Icon(Icons.close_rounded,
@@ -489,11 +533,14 @@ class _ChatViewState extends State<_ChatView> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
           onPressed: () => context.go('/chats'),
         ),
-        title: Text(
-          'Чат #${widget.chatId}',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+        title: GestureDetector(
+          onTap: () => context.go('/chat/${widget.chatId}/info'),
+          child: Text(
+            'Чат #${widget.chatId}',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         actions: [
@@ -685,10 +732,10 @@ class _MessageBubble extends StatelessWidget {
     final Color color;
     final Color onColor;
     if (isMine) {
-      color = isDark ? const Color(0xFF0A84FF) : const Color(0xFF007AFF);
-      onColor = Colors.white;
+      color = isDark ? const Color(0xFF005C4B) : const Color(0xFFE2FFC7);
+      onColor = isDark ? Colors.white : Colors.black87;
     } else {
-      color = isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA);
+      color = isDark ? const Color(0xFF202C33) : Colors.white;
       onColor = isDark ? Colors.white : Colors.black87;
     }
 

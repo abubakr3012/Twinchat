@@ -66,9 +66,20 @@ class MessageUpdateDeleteView(
     ]
 
     def perform_update(self, serializer):
-        serializer.save()
+        message = serializer.save(is_edited=True)
         # Mark message as read by current user
         self.object.read_by.add(self.request.user)
+
+        # Broadcast edit
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{message.chat_id}',
+            {
+                'type': 'chat_message_edit',
+                'message_id': message.id,
+                'content': message.content,
+            }
+        )
 
 
 class MessageMarkReadView(generics.UpdateAPIView):

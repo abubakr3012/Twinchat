@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../screens/call/call_screen.dart';
 import '../screens/chat/chat_screen.dart';
+import '../screens/chat/chat_info_screen.dart';
 import '../screens/chatlist/chat_list_screen.dart';
 import '../screens/code/code_screen.dart';
 import '../screens/contacts/contacts_screen.dart';
@@ -72,6 +73,13 @@ class AppRouter {
         builder: (_, state) {
           final id = int.tryParse(state.pathParameters['id'] ?? '0') ?? 0;
           return ChatScreen(chatId: id);
+        },
+      ),
+      GoRoute(
+        path: '/chat/:id/info',
+        builder: (_, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '0') ?? 0;
+          return ChatInfoScreen(chatId: id);
         },
       ),
       GoRoute(path: '/contacts', builder: (_, __) => const ContactsScreen()),
