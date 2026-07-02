@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 /// Тип чата.
-enum ChatType { private, group, unknown }
+enum ChatType { private, group, saved, unknown }
 
 ChatType chatTypeFromString(String? value) {
   switch (value) {
@@ -9,6 +9,8 @@ ChatType chatTypeFromString(String? value) {
       return ChatType.private;
     case 'group':
       return ChatType.group;
+    case 'saved':
+      return ChatType.saved;
     default:
       return ChatType.unknown;
   }

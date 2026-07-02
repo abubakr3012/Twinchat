@@ -57,12 +57,32 @@ class _StoriesView extends StatelessWidget {
         child: const Icon(Icons.add_a_photo_outlined),
       ),
       body: BlocConsumer<StoriesBloc, StoriesState>(
-        listenWhen: (a, b) => b is StoriesReady && b.error != null,
+        listenWhen: (prev, curr) {
+          if (curr is! StoriesReady) return false;
+          if (prev is! StoriesReady) return true;
+          return prev.error != curr.error || prev.opened?.id != curr.opened?.id;
+        },
         listener: (context, state) {
-          if (state is StoriesReady && state.error != null) {
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(content: Text(state.error!)));
+          if (state is StoriesReady) {
+            if (state.error != null) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(content: Text(state.error!)));
+            }
+            if (state.opened != null) {
+              // Open story viewer
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => BlocProvider.value(
+                  value: context.read<StoriesBloc>(),
+                  child: StoryViewerScreen(story: state.opened!),
+                ),
+              )).then((_) {
+                // Clear state when user goes back via system back button
+                if (context.mounted) {
+                  context.read<StoriesBloc>().add(const StoriesClose());
+                }
+              });
+            }
           }
         },
         builder: (context, state) {

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
@@ -107,6 +108,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       case 'settings':
                         context.go('/settings');
                         break;
+                      case 'saved':
+                        _openSavedMessages(context);
+                        break;
                       case 'logout':
                         _showLogoutDialog(context);
                         break;
@@ -121,6 +125,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
                               color: scheme.onSurface, size: 22),
                           const SizedBox(width: 12),
                            Text(l10n.myProfile),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'saved',
+                      child: Row(
+                        children: [
+                          Icon(Icons.bookmark_border_rounded,
+                              color: scheme.onSurface, size: 22),
+                          const SizedBox(width: 12),
+                           Text(l10n.savedMessages),
                         ],
                       ),
                     ),
@@ -262,6 +277,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
     );
   }
 
+  Future<void> _openSavedMessages(BuildContext context) async {
+    try {
+      final repo = GetIt.I<ChatsRepository>();
+      final chat = await repo.create(type: ChatType.saved);
+      if (!context.mounted) return;
+      context.go('/chat/${chat.id}');
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
 }
 
 void _showGroupSettings(BuildContext context, Chat chat) {
@@ -400,15 +426,23 @@ class _ChatsTab extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemCount: ready.chats.where((c) {
               if (searchQuery.isEmpty) return true;
-              return c.displayName(ready.me.username).toLowerCase().contains(searchQuery.toLowerCase());
+              final searchName = c.type == ChatType.saved
+                  ? l10n.savedMessages
+                  : c.displayName(ready.me.username);
+              return searchName.toLowerCase().contains(searchQuery.toLowerCase());
             }).length,
             itemBuilder: (_, i) {
               final filteredChats = ready.chats.where((c) {
                 if (searchQuery.isEmpty) return true;
-                return c.displayName(ready.me.username).toLowerCase().contains(searchQuery.toLowerCase());
+                final searchName = c.type == ChatType.saved
+                    ? l10n.savedMessages
+                    : c.displayName(ready.me.username);
+                return searchName.toLowerCase().contains(searchQuery.toLowerCase());
               }).toList();
               final chat = filteredChats[i];
-              final name = chat.displayName(ready.me.username);
+              final name = chat.type == ChatType.saved
+                  ? l10n.savedMessages
+                  : chat.displayName(ready.me.username);
               return _ChatListItem(
                 chat: chat,
                 name: name,
@@ -457,38 +491,74 @@ class _ChatListItem extends StatelessWidget {
             child: Row(
               children: [
                 // Avatar
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        scheme.primary,
-                        scheme.primary.withOpacity(0.7),
+                if (chat.type == ChatType.saved)
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: scheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: scheme.primary.withOpacity(0.3)),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.bookmark_border_rounded,
+                        color: scheme.primary,
+                        size: 28,
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          scheme.primary,
+                          scheme.primary.withOpacity(0.7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: scheme.primary.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
                       ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: scheme.primary.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    child: chat.displayAvatar() != null && chat.displayAvatar()!.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: CachedNetworkImage(
+                              imageUrl: chat.displayAvatar()!,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => Center(
+                                child: Text(
+                                  name.isEmpty ? '?' : name.characters.first.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    color: scheme.onPrimary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                        : Center(
+                            child: Text(
+                              name.isEmpty ? '?' : name.characters.first.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: scheme.onPrimary,
+                              ),
+                            ),
+                          ),
                   ),
-                  child: Center(
-                    child: Text(
-                      name.isEmpty ? '?' : name.characters.first.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onPrimary,
-                      ),
-                    ),
-                  ),
-                ),
                 const SizedBox(width: 14),
 
                 // Content

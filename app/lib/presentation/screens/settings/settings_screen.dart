@@ -11,14 +11,33 @@ import '../../../domain/repositories/auth_repository.dart';
 import '../../../domain/repositories/settings_repository.dart';
 import '../../blocs/settings/settings_bloc.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
   @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late final SettingsBloc _bloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _bloc = SettingsBloc(repository: GetIt.I<SettingsRepository>())
+      ..add(const SettingsLoad());
+  }
+
+  @override
+  void dispose() {
+    _bloc.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider<SettingsBloc>(
-      create: (_) => SettingsBloc(repository: GetIt.I<SettingsRepository>())
-        ..add(const SettingsLoad()),
+    return BlocProvider<SettingsBloc>.value(
+      value: _bloc,
       child: const _SettingsView(),
     );
   }

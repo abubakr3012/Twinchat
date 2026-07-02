@@ -40,6 +40,7 @@ const Map<String, String> enStrings = {
   'profile': 'Profile',
   'my_profile': 'My Profile',
   'safe_mode': 'Safe Mode',
+  'saved_messages': 'Saved Messages',
 
   // Chat
   'no_chats': 'No chats',

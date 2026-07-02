@@ -40,6 +40,7 @@ const Map<String, String> ruStrings = {
   'profile': 'Профиль',
   'my_profile': 'Мой профиль',
   'safe_mode': 'Safe Mode',
+  'saved_messages': 'Избранное',
 
   // Chat
   'no_chats': 'Нет чатов',

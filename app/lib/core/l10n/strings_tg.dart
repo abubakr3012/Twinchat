@@ -33,13 +33,14 @@ const Map<String, String> tgStrings = {
   'dont_have_account': 'Ҳисоб надоред?',
 
   // Navigation
-  'chats': 'Сӯҳбатҳо',
+  'chats': 'Чатҳо',
   'contacts': 'Тамосҳо',
   'stories': 'Ҳикояҳо',
   'settings': 'Танзимот',
   'profile': 'Профил',
   'my_profile': 'Профили ман',
-  'safe_mode': 'Safe Mode',
+  'safe_mode': 'Реҷаи бехатар',
+  'saved_messages': 'Паёмҳои захирашуда',
 
   // Chat
   'no_chats': 'Сӯҳбатҳо нестанд',

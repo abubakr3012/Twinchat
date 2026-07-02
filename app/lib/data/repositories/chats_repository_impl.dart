@@ -70,8 +70,11 @@ class ChatsRepositoryImpl implements ChatsRepository {
     return dto.toDomain();
   }
 
-  String _typeToString(ChatType t) =>
-      t == ChatType.group ? 'group' : 'private';
+  String _typeToString(ChatType t) {
+    if (t == ChatType.group) return 'group';
+    if (t == ChatType.saved) return 'saved';
+    return 'private';
+  }
 
   // ─── DB helpers ──────────────────────────────────────────────────────
 

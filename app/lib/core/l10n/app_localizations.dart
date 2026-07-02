@@ -83,6 +83,7 @@ class AppLocalizations {
   String get profile => translate('profile');
   String get myProfile => translate('my_profile');
   String get safeMode => translate('safe_mode');
+  String get savedMessages => translate('saved_messages');
 
   // Chat
   String get noChats => translate('no_chats');
