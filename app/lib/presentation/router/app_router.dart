@@ -82,7 +82,13 @@ class AppRouter {
           return ChatInfoScreen(chatId: id);
         },
       ),
-      GoRoute(path: '/contacts', builder: (_, __) => const ContactsScreen()),
+      GoRoute(
+        path: '/contacts',
+        builder: (_, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return ContactsScreen(onSelect: extra?['onSelect'] as Function(int)?);
+        },
+      ),
       GoRoute(path: '/stories', builder: (_, __) => const StoriesScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(path: '/safe-mode', builder: (_, __) => const SafeModeScreen()),

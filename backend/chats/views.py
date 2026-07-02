@@ -33,7 +33,7 @@ class ChatListCreateView(generics.ListCreateAPIView):
         )
 
 
-class ChatDetailView(generics.RetrieveAPIView):
+class ChatDetailView(generics.RetrieveUpdateAPIView):
 
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer

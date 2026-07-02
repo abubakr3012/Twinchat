@@ -68,7 +68,7 @@ class MessageUpdateDeleteView(
     def perform_update(self, serializer):
         message = serializer.save(is_edited=True)
         # Mark message as read by current user
-        self.object.read_by.add(self.request.user)
+        message.read_by.add(self.request.user)
 
         # Broadcast edit
         channel_layer = get_channel_layer()
@@ -95,5 +95,5 @@ class MessageMarkReadView(generics.UpdateAPIView):
         return Message.objects.get(id=message_id)
     
     def perform_update(self, serializer):
-        serializer.save()
-        self.object.read_by.add(self.request.user)
+        message = serializer.save()
+        message.read_by.add(self.request.user)

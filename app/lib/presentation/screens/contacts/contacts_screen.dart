@@ -13,7 +13,8 @@ import '../../../domain/repositories/users_repository.dart';
 import '../../blocs/contacts/contacts_bloc.dart';
 
 class ContactsScreen extends StatelessWidget {
-  const ContactsScreen({super.key});
+  const ContactsScreen({super.key, this.onSelect});
+  final Function(int)? onSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +23,14 @@ class ContactsScreen extends StatelessWidget {
         contactsRepository: GetIt.I<ContactsRepository>(),
         usersRepository: GetIt.I<UsersRepository>(),
       )..add(const ContactsLoad()),
-      child: const _ContactsView(),
+      child: _ContactsView(onSelect: onSelect),
     );
   }
 }
 
 class _ContactsView extends StatefulWidget {
-  const _ContactsView();
+  const _ContactsView({this.onSelect});
+  final Function(int)? onSelect;
 
   @override
   State<_ContactsView> createState() => _ContactsViewState();
@@ -207,15 +209,20 @@ class _ContactsViewState extends State<_ContactsView> {
                             .read<ContactsBloc>()
                             .add(const ContactsLoad()),
                         child: ListView.separated(
-                          itemCount: ready.contacts.length,
+                          itemCount: filtered.length,
                           separatorBuilder: (_, __) =>
                               const Divider(height: 1),
                           itemBuilder: (_, i) {
-                            final c = ready.contacts[i];
+                            final c = filtered[i];
                             return _ContactTile(
                               contact: c,
-                              onTap: () =>
-                                  context.push('/profile/${c.contactId}'),
+                              onTap: () {
+                                if (widget.onSelect != null) {
+                                  widget.onSelect!(c.contactId);
+                                } else {
+                                  context.push('/profile/${c.contactId}');
+                                }
+                              },
                               onDelete: () => context
                                   .read<ContactsBloc>()
                                   .add(ContactsDelete(c.id)),
