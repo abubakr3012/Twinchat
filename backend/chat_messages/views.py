@@ -45,6 +45,7 @@ class MessageListCreateView(
                 'message_type': message.message_type,
                 'sender_id': message.sender.id,
                 'sender_username': message.sender.username,
+                'sender_avatar': message.sender.avatar,
                 'sent_at': message.created_at.isoformat(),
                 'read_by': [u.id for u in message.read_by.all()],
             }

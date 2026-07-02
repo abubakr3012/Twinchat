@@ -104,6 +104,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message_type': event['message_type'],
             'sender_id': event['sender_id'],
             'sender_username': event['sender_username'],
+            'sender_avatar': event.get('sender_avatar'),
             'sent_at': event['sent_at'],
             'read_by': event.get('read_by', []),
         }))

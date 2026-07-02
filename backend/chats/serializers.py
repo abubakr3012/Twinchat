@@ -9,12 +9,18 @@ class ChatMemberSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    avatar = serializers.URLField(
+        source='user.avatar',
+        read_only=True
+    )
+
     class Meta:
         model = ChatMember
         fields = [
             'id',
             'user',
             'username',
+            'avatar',
             'is_admin',
             'joined_at'
         ]

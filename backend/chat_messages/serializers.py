@@ -8,11 +8,15 @@ class MessageSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    sender_avatar = serializers.URLField(
+        source='sender.avatar',
+        read_only=True
+    )
+
     read_by = serializers.PrimaryKeyRelatedField(
         many=True,
         read_only=True
     )
-
 
     class Meta:
 
@@ -23,6 +27,7 @@ class MessageSerializer(serializers.ModelSerializer):
             'chat',
             'sender',
             'sender_username',
+            'sender_avatar',
             'content',
             'message_type',
             'is_edited',

@@ -14,12 +14,18 @@ class ContactSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    contact_avatar = serializers.URLField(
+        source='contact.avatar',
+        read_only=True
+    )
+
     class Meta:
         model = Contact
         fields = [
             'id',
             'contact_id',
             'contact_username',
+            'contact_avatar',
             'nickname',
             'is_blocked',
             'added_at',
