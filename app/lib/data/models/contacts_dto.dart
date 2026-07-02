@@ -3,6 +3,7 @@ class ContactDto {
     required this.id,
     required this.contactId,
     required this.contactUsername,
+    this.contactAvatar,
     this.nickname,
     this.isBlocked = false,
     this.addedAt,

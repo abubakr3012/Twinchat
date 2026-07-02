@@ -4,6 +4,7 @@ class MessageDto {
     required this.chatId,
     required this.senderId,
     required this.senderUsername,
+    this.senderAvatar,
     required this.content,
     required this.messageType,
     required this.createdAt,
